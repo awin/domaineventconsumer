@@ -11,8 +11,9 @@ public class MembershipMapper implements Mapper<Membership> {
     }
     @Override
     public void persist(Membership dto) {
-        Long value = jedis.incr(dto.getString());
-        System.out.println("Value at" + dto.getString() + " : " + value);
+        String key = String.format("%s-%s", dto.merchantId, dto.affiliateId);
+        String status = dto.status;
 
+        jedis.set(key, status);
     }
 }

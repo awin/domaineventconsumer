@@ -3,7 +3,7 @@ package com.zanox.kafka.highlevelconsumer;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 
-public class TestConsumer implements Consumer {
+public class TestConsumer implements com.zanox.kafka.highlevelconsumer.Consumer {
 
     private final KafkaStream stream;
     private final int threadNumber;

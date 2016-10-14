@@ -1,8 +1,5 @@
 package com.zanox.application;
 
-import com.zanox.application.infrastructure.Mapper;
-import com.zanox.application.infrastructure.Parser;
-import com.zanox.application.model.Membership;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 
@@ -10,16 +7,13 @@ public class Consumer implements com.zanox.kafka.highlevelconsumer.Consumer {
 
     private final KafkaStream stream;
     private final int threadNumber;
-    private Parser<Membership> parser;
-    private Mapper<Membership> mapper;
+    private Processor processor;
 
-    public Consumer(KafkaStream<byte[], byte[]> stream, int threadNumber) {
+    public Consumer(KafkaStream<byte[], byte[]> stream, int threadNumber, Processor processor) {
         System.out.println("stream: " + stream);
         this.stream = stream;
         this.threadNumber = threadNumber;
-
-        parser = new MembershipParser();
-        mapper = new MembershipMapper();
+        this.processor = processor;
     }
 
     @Override
@@ -31,8 +25,7 @@ public class Consumer implements com.zanox.kafka.highlevelconsumer.Consumer {
             String output = "Thread " + threadNumber + ": " + new String(message);
             System.out.println(output);
 
-            Membership membership = parser.parse(message);
-            mapper.persist(membership);
+            processor.process(message);
         }
 
         System.out.println("Shutting down Thread: " + threadNumber);

@@ -12,10 +12,11 @@ class ConsumerTest extends Specification {
         def messageAndMetadata = Mock(MessageAndMetadata)
         def kafkaStream = Mock(KafkaStream)
         def consumerIterator = Mock(ConsumerIterator)
+        def processor = Mock(Processor)
         def message = "some message".bytes
 
         when:
-        def consumer = new Consumer(kafkaStream, 1)
+        def consumer = new Consumer(kafkaStream, 1, processor)
 
         and:
         consumer.run()
@@ -26,6 +27,6 @@ class ConsumerTest extends Specification {
         1 * consumerIterator.hasNext() >> false
         1 * consumerIterator.next() >> messageAndMetadata
         1 * messageAndMetadata.message() >> message
-
+        1 * processor.process(message)
     }
 }

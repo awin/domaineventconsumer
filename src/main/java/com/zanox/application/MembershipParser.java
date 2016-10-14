@@ -15,14 +15,12 @@ public class MembershipParser implements Parser<Membership> {
     }
 
     @Override
-    public Membership parse(byte[] bytes) {
+    public Membership parse(byte[] bytes) throws BadMessageException {
         Membership dto = null;
         try {
             dto = gson.fromJson(new String(bytes), Membership.class);
-        } catch (JsonSyntaxException e) {
-            // Synax
         } catch (JsonParseException e) {
-            // Parsing
+            throw new BadMessageException(e);
         }
         return dto;
     }
