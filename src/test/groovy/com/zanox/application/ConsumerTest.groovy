@@ -6,7 +6,7 @@ import kafka.message.MessageAndMetadata
 import spock.lang.Specification
 
 
-class TestConsumerTest extends Specification {
+class ConsumerTest extends Specification {
     def "It should iterate the stream and try to consume messages one by one"() {
         setup:
         def messageAndMetadata = Mock(MessageAndMetadata)
