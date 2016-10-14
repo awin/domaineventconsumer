@@ -10,8 +10,8 @@ public class MembershipMapper implements Mapper<Membership> {
     }
     @Override
     public void persist(Membership dto) {
-        jedis.set("foo", dto.getString());
-        String value = jedis.get("foo");
+        Long value = jedis.incr(dto.getString());
+        System.out.println("Value at" + dto.getString() + " : " + value);
 
     }
 }

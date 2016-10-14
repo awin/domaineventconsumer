@@ -1,6 +1,7 @@
 package com.zanox.kafka.highlevelconsumer;
 
 import com.zanox.application.infrastructure.Mapper;
+import com.zanox.application.infrastructure.MembershipMapper;
 import com.zanox.application.infrastructure.MembershipParser;
 import com.zanox.application.infrastructure.Parser;
 import com.zanox.application.model.Membership;
@@ -22,6 +23,7 @@ public class TestConsumer implements Consumer {
         this.threadNumber = threadNumber;
 
         parser = new MembershipParser();
+        mapper = new MembershipMapper();
     }
 
     @Override
