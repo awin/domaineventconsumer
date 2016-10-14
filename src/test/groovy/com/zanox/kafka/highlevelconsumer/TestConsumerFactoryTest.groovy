@@ -13,6 +13,6 @@ class TestConsumerFactoryTest extends Specification {
         def consumer = consumerFactory.create(Mock(KafkaStream), 1)
 
         then:
-        consumer instanceof Consumer
+        consumer instanceof com.zanox.kafka.highlevelconsumer.Consumer
     }
 }

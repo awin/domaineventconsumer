@@ -15,7 +15,7 @@ class TestConsumerTest extends Specification {
         def message = "some message".bytes
 
         when:
-        def consumer = new TestConsumer(kafkaStream, 1)
+        def consumer = new com.zanox.kafka.highlevelconsumer.TestConsumer(kafkaStream, 1)
 
         and:
         consumer.run()
