@@ -1,30 +1,40 @@
 package com.zanox.application;
 
-import com.zanox.application.infrastructure.Mapper;
-import com.zanox.application.infrastructure.Parser;
-import com.zanox.application.model.Membership;
-
 public class Processor {
-    private Parser<Membership> parser;
-    private Mapper<Membership> mapper;
+    private EventParser parser;
 
     public Processor() {
-        parser = new MembershipParser();
-        mapper = new MembershipMapper();
+        parser = new EventParser();
     }
 
-    public Processor(Mapper<Membership> mapper, Parser<Membership> parser) {
+    public Processor(EventParser parser) {
         this.parser = parser;
-        this.mapper = mapper;
     }
 
     public void process(byte[] message) {
-        Membership membership = null;
+        DomainEvent event;
+
         try {
-            membership = parser.parse(message);
-            mapper.persist(membership);
+            event = parser.getEventFromMessage(message);
         } catch (BadMessageException e) {
             System.err.println("Unable to parse message");
+
+            return;
+        } catch (UnsupportedEvent e) {
+            System.out.println("Unsupported event");
+
+            return;
+        }
+
+        EventHandlerFactory eventHandlerFactory = new EventHandlerFactory();
+
+        try {
+            DomainEventHandler eventHandler = eventHandlerFactory.getHandlerByEvent(event);
+            eventHandler.handle(event);
+        } catch (UnableToHandleEvent e) {
+            System.err.println("Unable to parse message");
+
+            return;
         }
     }
 }
