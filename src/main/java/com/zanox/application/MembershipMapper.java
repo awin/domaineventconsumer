@@ -1,5 +1,6 @@
-package com.zanox.application.infrastructure;
+package com.zanox.application;
 
+import com.zanox.application.infrastructure.Mapper;
 import com.zanox.application.model.Membership;
 import redis.clients.jedis.Jedis;
 
