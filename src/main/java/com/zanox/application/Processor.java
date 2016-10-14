@@ -14,8 +14,8 @@ public class Processor {
     }
 
     public Processor(Mapper<Membership> mapper, Parser<Membership> parser) {
-        parser = parser;
-        mapper = mapper;
+        this.parser = parser;
+        this.mapper = mapper;
     }
 
     public void process(byte[] message) {
