@@ -14,6 +14,6 @@ public class ZkOffsetReseter {
     }
 
     public void reset() {
-        ZkUtils.maybeDeletePath(zookeeper + ":" + zookeeperPort, "/consumers/" + groupId);
+        ZkUtils.maybeDeletePath(zookeeper, "/consumers/" + groupId);
     }
 }
