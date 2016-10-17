@@ -15,7 +15,7 @@ public class AdvertiserAcceptedMembershipApplicationEventHandler implements Doma
 
     public void handle(AdvertiserAcceptedMembershipApplicationEvent event) throws UnableToHandleEvent
     {
-        String key = String.format("%s-%s", event.advertiserId, event.publisherId);
+        String key = String.format("%s-%s", event.data.advertiserId, event.data.publisherId);
         String status = "accepted";
         redisMapper.persist(key, status);
     }

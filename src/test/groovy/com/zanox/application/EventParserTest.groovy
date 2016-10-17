@@ -26,17 +26,19 @@ class MembershipParserTest extends Specification {
         thrown BadMessageException
     }
 
-    def "It parses affiliateId"() {
+    def "It parses JSON"() {
         setup:
         def parser = new EventParser();
 
         when:
-        def event = parser.getEventFromMessage("{eventName:'AdvertiserAcceptedMembershipApplicationEvent', publisherId:42, advertiserId:1337}".bytes)
+        def event = parser.getEventFromMessage(
+            '{"eventName": "AdvertiserAcceptedMembershipApplicationEvent","data":{"publisherId":42, "advertiserId":1337}}'.bytes
+        )
         def specificEvent = event as AdvertiserAcceptedMembershipApplicationEvent
 
         then:
         assert event instanceof DomainEvent
-        assert specificEvent.publisherId == 42
-        assert specificEvent.advertiserId == 1337
+        assert specificEvent.data.publisherId == 42
+        assert specificEvent.data.advertiserId == 1337
     }
 }
