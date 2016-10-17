@@ -23,7 +23,7 @@ public class AdvertiserAcceptedMembershipApplicationEventHandler implements Doma
     public void handle(AdvertiserAcceptedMembershipApplicationEvent event) throws UnableToHandleEvent
     {
         Membership membership;
-        MembershipId membershipId = new MembershipId(event.advertiserId, event.publisherId);
+        MembershipId membershipId = new MembershipId(event.data.advertiserId, event.data.publisherId);
 
         // load or create if does not exist
         try {
