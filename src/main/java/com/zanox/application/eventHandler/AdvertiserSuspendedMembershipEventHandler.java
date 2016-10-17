@@ -2,25 +2,25 @@ package com.zanox.application.eventHandler;
 
 import com.zanox.application.DomainEventHandler;
 import com.zanox.application.UnableToHandleEvent;
-import com.zanox.application.event.AdvertiserAcceptedMembershipApplicationEvent;
+import com.zanox.application.event.AdvertiserSuspendedMembershipEvent;
 import com.zanox.application.model.Membership;
 import com.zanox.application.model.MembershipId;
 import com.zanox.application.persistence.MembershipRepository;
 import com.zanox.application.persistence.UnableToFindMembership;
 
-public class AdvertiserAcceptedMembershipApplicationEventHandler implements DomainEventHandler<AdvertiserAcceptedMembershipApplicationEvent>
+public class AdvertiserSuspendedMembershipEventHandler implements DomainEventHandler<AdvertiserSuspendedMembershipEvent>
 {
     private final MembershipRepository membershipRepository;
 
-    public AdvertiserAcceptedMembershipApplicationEventHandler() {
+    public AdvertiserSuspendedMembershipEventHandler() {
         this.membershipRepository = new MembershipRepository();
     }
 
-    public AdvertiserAcceptedMembershipApplicationEventHandler(MembershipRepository membershipRepository) {
+    public AdvertiserSuspendedMembershipEventHandler(MembershipRepository membershipRepository) {
         this.membershipRepository = membershipRepository;
     }
 
-    public void handle(AdvertiserAcceptedMembershipApplicationEvent event) throws UnableToHandleEvent
+    public void handle(AdvertiserSuspendedMembershipEvent event) throws UnableToHandleEvent
     {
         Membership membership;
         MembershipId membershipId = new MembershipId(event.advertiserId, event.publisherId);
@@ -34,7 +34,7 @@ public class AdvertiserAcceptedMembershipApplicationEventHandler implements Doma
 
         // activate & persist
         membershipRepository.persist(
-            membership.activate()
+            membership.deactivate()
         );
     }
 }

@@ -1,7 +1,29 @@
 package com.zanox.application.model;
 
 public class Membership {
-    public Integer affiliateId;
-    public Integer merchantId;
+    public MembershipId id;
     public String status;
+
+    public Membership(MembershipId membershipId)
+    {
+        this.id = membershipId;
+    }
+
+    public Membership(MembershipId membershipId, String status)
+    {
+        this.id = membershipId;
+        this.status = status;
+    }
+
+    public Membership activate() {
+        this.status = "active";
+
+        return this;
+    }
+
+    public Membership deactivate() {
+        this.status = "inactive";
+
+        return this;
+    }
 }

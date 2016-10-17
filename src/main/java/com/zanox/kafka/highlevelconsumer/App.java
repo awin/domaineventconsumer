@@ -26,9 +26,9 @@ public class App {
         ConsumerConnector consumerConnector = new ConsumerConnectorFactory(consumerConfig).create();
 
         ConsumerExecutor consumerExecutor = new ConsumerExecutor(
-                new com.zanox.application.ConsumerFactory(),
-                new MessageStreamFactory(topic, consumerConnector),
-                new ExecutorServiceFactory());
+            new com.zanox.application.ConsumerFactory(),
+            new MessageStreamFactory(topic, consumerConnector),
+            new ExecutorServiceFactory());
         Collection<Future> futureSessions = consumerExecutor.run(numTheads);
 
         Iterator<Future> iterator = futureSessions.iterator();
