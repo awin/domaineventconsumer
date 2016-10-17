@@ -17,3 +17,33 @@ A good way to verify all threads work as expected, try to use the following kafk
 ```
 watch {path-to-kafka}/bin/kafka-run-class.sh kafka.tools.ConsumerOffsetChecker --topic {topic} --zookeeper {zookeeper} --group {group-id}
 ```
+
+### How to set up a full test
+
+Start with running the required infrastructure, Zookeeper, Kafka, Redis:
+
+Net Host here is required, because we need to connect to Kafka from clients outside of Docker.
+Kafka not really working well with Docker because of hostname problems.
+
+```
+docker run -d --net=host --name zookeeper wurstmeister/zookeeper
+docker run -d --net=host --name k01 kafka
+```
+
+Kafka image is currently a patched wurstmeister image, found at `yarektyshchenko/kafka` on Github.
+
+Create a topic `test`:
+```
+docker exec -it k01 bash
+$KAFKA_HOME/bin/kafka-topics.sh --create --replication-factor 1 --partitions 1 --zookeeper localhost:2181 --topic test
+$KAFKA_HOME/bin/kafka-topics.sh --zookeeper localhost:2181 --describe
+```
+
+Start up Redis:
+
+```
+docker run --name redis -p 6379:6379 -d redis
+docker logs -f redis
+```
+
+Now you can connect with your application.
