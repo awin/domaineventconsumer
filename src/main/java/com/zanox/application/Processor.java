@@ -1,14 +1,18 @@
 package com.zanox.application;
 
 public class Processor {
+    private final EventHandlerFactory eventHandlerFactory;
     private EventParser parser;
 
     public Processor() {
         parser = new EventParser();
+        eventHandlerFactory = new EventHandlerFactory();
+
     }
 
-    public Processor(EventParser parser) {
+    public Processor(EventParser parser, EventHandlerFactory handlerFactory) {
         this.parser = parser;
+        this.eventHandlerFactory = handlerFactory;
     }
 
     public void process(byte[] message) {
@@ -26,7 +30,6 @@ public class Processor {
             return;
         }
 
-        EventHandlerFactory eventHandlerFactory = new EventHandlerFactory();
 
         try {
             DomainEventHandler eventHandler = eventHandlerFactory.getHandlerByEvent(event);
