@@ -1,47 +1,41 @@
 package com.zanox.application
 
-import com.zanox.application.infrastructure.Parser
-import com.zanox.application.infrastructure.Mapper
-import com.zanox.application.model.Membership
 import spock.lang.Specification
 
 class ProcessorTest extends Specification {
-    def mapper
-    def parser
-    def setup() {
-        mapper = Mock(Mapper)
-        parser = Mock(Parser)
-    }
-
     def "Processor can process a message"() {
         setup:
-        Processor p = new Processor(mapper, parser)
-        message = "foo".bytes
-        membership = Mock(Membership)
+        def parser = Mock(EventParser)
+        def handlerFactory = Mock(EventHandlerFactory)
+        Processor p = new Processor(parser, handlerFactory)
+        def message = "foo".bytes
+        def event = Mock(DomainEvent)
+        def handler = Mock(DomainEventHandler)
 
 
         when:
         p.process(message)
 
         then:
-        1 * parser.parse(message) >> membership
-        1 * mapper.persist(membership)
+        1 * parser.getEventFromMessage(message) >> event
+        1 * handlerFactory.getHandlerByEvent(event) >> handler
+        1 * handler.handle(event)
     }
 
     def "Processor doesn't persist on error"() {
         setup:
-        Processor p = new Processor(mapper, parser)
-        message = "foo".bytes
-        membership = Mock(Membership)
+        def parser = Mock(EventParser)
+        def handlerFactory = Mock(EventHandlerFactory)
+        Processor p = new Processor(parser, handlerFactory)
+        def message = "foo".bytes
 
-        given:
-        parser.parse(message) >> {
-            throw new BadMessageException()
-        }
         when:
         p.process(message)
 
         then:
-        0 * mapper.persist(_)
+        0 * handlerFactory.getHandlerByEvent(_)
+        parser.getEventFromMessage(message) >> {
+            throw new BadMessageException()
+        }
     }
 }
