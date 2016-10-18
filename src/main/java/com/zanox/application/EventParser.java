@@ -3,6 +3,7 @@ package com.zanox.application;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.zanox.application.event.AdvertiserAcceptedMembershipApplicationEvent;
+import com.zanox.application.eventHandler.AdvertiserAcceptedMembershipApplicationEventHandler;
 
 import java.lang.reflect.Type;
 
@@ -48,5 +49,24 @@ public class EventParser{
             string,
             eventClass
         );
+    }
+
+    public void handle(byte[] message) {
+        try {
+            DomainEvent event = gson.fromJson(new String(message), DomainEvent.class);
+            String eventName = event.eventName;
+
+            switch (eventName) {
+                case "AdvertiserAcceptedMembershipApplicationEvent":
+                    AdvertiserAcceptedMembershipApplicationEvent specificEvent = gson.fromJson(
+                            new String(message),
+                            AdvertiserAcceptedMembershipApplicationEvent.class
+                    );
+                    AdvertiserAcceptedMembershipApplicationEventHandler handler = new AdvertiserAcceptedMembershipApplicationEventHandler();
+                    handler.handle(specificEvent);
+            }
+        } catch (JsonParseException | UnableToHandleEvent e) {
+            e.printStackTrace();
+        }
     }
 }

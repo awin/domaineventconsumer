@@ -17,8 +17,7 @@ public class EventHandlerFactory {
     }
 
     private DomainEventHandler createAdvertiserAcceptedMembershipApplicationEventHandler() {
-        DomainEventHandler handler = new AdvertiserAcceptedMembershipApplicationEventHandler();
-        return handler;
+        return new AdvertiserAcceptedMembershipApplicationEventHandler();
     }
 
     private DomainEventHandler createAdvertiserSuspendedMembershipEventHandler() {

@@ -1,10 +1,15 @@
 package com.zanox.application.eventHandler
 
+import com.zanox.application.DomainEvent
+import com.zanox.application.DomainEventHandler
+import com.zanox.application.EventParser
+import com.zanox.application.Processor
 import com.zanox.application.event.AdvertiserAcceptedMembershipApplicationEvent
 import com.zanox.application.model.Membership
 import com.zanox.application.model.MembershipId
 import com.zanox.application.persistence.MembershipRepository
 import com.zanox.application.event.Data
+import com.zanox.application.persistence.UnableToFindMembership
 import spock.lang.Specification
 
 class AdvertiserAcceptedMembershipEventHandlerTest extends Specification {
