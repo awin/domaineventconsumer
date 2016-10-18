@@ -18,4 +18,9 @@ exec:
 logs:
 	docker exec animated-octopus sh -c "tail -f /srv/log/animated-octopus/*"
 
-.PHONY: all build run start stop exec logs
+version ?= latest
+push:
+	docker tag -f dockerhub.zanox.com:5000/zanox/animated-octopus dockerhub.zanox.com:5000/zanox/animated-octopus:$(version)
+	docker push dockerhub.zanox.com:5000/zanox/animated-octopus:$(version)
+
+.PHONY: all build run start stop exec logs push
