@@ -27,10 +27,10 @@ Kafka not really working well with Docker because of hostname problems.
 
 ```
 docker run -d --net=host --name zookeeper wurstmeister/zookeeper
-docker run -d --net=host --name k01 kafka
+docker run -d --net=host --name k01 yarekt/kafka
 ```
 
-Kafka image is currently a patched wurstmeister image, found at `yarektyshchenko/kafka` on Github.
+Kafka image is currently a patched wurstmeister image, found at `yarektyshchenko/kafka-docker` on Github.
 
 Create a topic `test`:
 ```
