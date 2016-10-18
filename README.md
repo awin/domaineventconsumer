@@ -1,5 +1,23 @@
-# kafka-highlevel-consumer
-An implementation of the high level kafka consumer
+# Animated-Octopus
+An implementation of the high level kafka consumer. Why Animated Octopus? Github picked it as a random repo name and it
+somehow stuck.
+
+### Diagram
+
+![Container graph](http://g.gravizo.com/g?
+  digraph G {
+    rankdir="LR";
+    node [shape = box]
+    Darwin -> KafkaRest
+    KafkaRest -> "Kafka k01"
+	"Kafka k01" -> Zookeeper
+	"animated-octopus" -> Redis
+	"animated-octopus" -> Zookeeper
+	"animated-octopus" -> "Kafka k01"
+	"Membership API" -> Redis
+  }
+)
+
 
 ### Run with:  
 ```
