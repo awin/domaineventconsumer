@@ -5,10 +5,10 @@ BASEDIR=$(dirname "$SCRIPTDIR")
 LOGDIR=/srv/log/animated-octopus
 
 # Config
-TOPIC=test
+TOPIC=membership
 THREADS=1
-CONSUMER_GROUP=yt
-ZOOKEEPER=d-lhr1-docker-001.zanox.com
+CONSUMER_GROUP=animated-octopus-1
+ZOOKEEPER=s-lhr1-hdpma-001.zanox.com
 
 JAR_FILE="/app/target/highlevelconsumer.jar"
 
