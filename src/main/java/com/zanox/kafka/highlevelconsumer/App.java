@@ -20,7 +20,7 @@ public class App {
         System.out.println("number of threads: " + numTheads);
 
         //reset zookeeper offset to the beginning
-        //new ZkOffsetReseter(zookeeper, 2181, groupId).reset();
+        new ZkOffsetReseter(zookeeper, 2181, groupId).reset();
 
         ConsumerConfig consumerConfig = ConsumerConfigFactory.create(zookeeper, groupId);
         ConsumerConnector consumerConnector = new ConsumerConnectorFactory(consumerConfig).create();
