@@ -1,4 +1,4 @@
-package com.zanox.application;
+package com.zanox.application.eventHandler;
 
 /**
  * Created by aram.karapetyan on 14/10/16.

@@ -1,6 +1,8 @@
 package com.zanox.application
 
 import com.zanox.application.event.AdvertiserAcceptedMembershipApplicationEvent
+import com.zanox.application.parser.BadMessageException
+import com.zanox.application.parser.EventParser
 import spock.lang.Specification
 
 class MembershipParserTest extends Specification {

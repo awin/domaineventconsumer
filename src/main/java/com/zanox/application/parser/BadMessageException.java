@@ -1,4 +1,4 @@
-package com.zanox.application;
+package com.zanox.application.parser;
 
 public class BadMessageException extends Exception {
     public BadMessageException(Throwable e) {

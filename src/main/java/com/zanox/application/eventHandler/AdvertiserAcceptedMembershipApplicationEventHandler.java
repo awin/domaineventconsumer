@@ -1,14 +1,12 @@
 package com.zanox.application.eventHandler;
 
-import com.zanox.application.DomainEventHandler;
-import com.zanox.application.UnableToHandleEvent;
 import com.zanox.application.event.AdvertiserAcceptedMembershipApplicationEvent;
 import com.zanox.application.model.Membership;
 import com.zanox.application.model.MembershipId;
 import com.zanox.application.persistence.MembershipRepository;
 import com.zanox.application.persistence.UnableToFindMembership;
 
-public class AdvertiserAcceptedMembershipApplicationEventHandler implements DomainEventHandler<AdvertiserAcceptedMembershipApplicationEvent>
+public class AdvertiserAcceptedMembershipApplicationEventHandler
 {
     private final MembershipRepository membershipRepository;
 

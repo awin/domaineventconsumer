@@ -1,7 +1,9 @@
-package com.zanox.application;
+package com.zanox.application.parser;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import com.zanox.application.DomainEvent;
+import com.zanox.application.eventHandler.UnableToHandleEvent;
 import com.zanox.application.event.AdvertiserAcceptedMembershipApplicationEvent;
 import com.zanox.application.event.AdvertiserSuspendedMembershipEvent;
 import com.zanox.application.event.PublisherLeftProgrammeEvent;
