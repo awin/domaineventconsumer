@@ -23,4 +23,7 @@ push:
 	docker tag -f dockerhub.zanox.com:5000/animated-octopus dockerhub.zanox.com:5000/animated-octopus:$(version)
 	docker push dockerhub.zanox.com:5000/animated-octopus:$(version)
 
-.PHONY: all build run start stop exec logs push
+redis-commander:
+	docker run -d -p 80:8081 tenstartups/redis-commander --redis-host d-lhr1-docker-141.zanox.com
+
+.PHONY: all build run start stop exec logs push redis-commander
