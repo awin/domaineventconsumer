@@ -16,16 +16,11 @@ public class App {
         this.processor = processor;
     }
 
-    public void run(String[] args) {
-        String zookeeper = args[0];
-        String groupId = args[1];
-        String topic = args[2];
-        int numTheads = Integer.parseInt(args[3]);
-
+    public void run(String zookeeper, String groupId, String topic, int numberOfThreads) {
         System.out.println("zookeeper: " + zookeeper);
         System.out.println("groupId: " + groupId);
         System.out.println("topic: " + topic);
-        System.out.println("number of threads: " + numTheads);
+        System.out.println("number of threads: " + numberOfThreads);
 
         //reset zookeeper offset to the beginning
         new ZkOffsetReseter(zookeeper, 2181, groupId).reset();
@@ -37,7 +32,7 @@ public class App {
             new ConsumerFactory(this.processor),
             new MessageStreamFactory(topic, consumerConnector),
             new ExecutorServiceFactory());
-        Collection<Future> futureSessions = consumerExecutor.run(numTheads);
+        Collection<Future> futureSessions = consumerExecutor.run(numberOfThreads);
 
         Iterator<Future> iterator = futureSessions.iterator();
         while (iterator.hasNext()) {
