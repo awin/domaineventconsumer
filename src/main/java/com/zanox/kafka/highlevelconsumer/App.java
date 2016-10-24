@@ -1,5 +1,6 @@
 package com.zanox.kafka.highlevelconsumer;
 
+import com.zanox.generic.Processor;
 import kafka.consumer.ConsumerConfig;
 import kafka.javaapi.consumer.ConsumerConnector;
 
@@ -8,7 +9,14 @@ import java.util.Iterator;
 import java.util.concurrent.Future;
 
 public class App {
-    public static void main(String[] args) {
+
+    private Processor processor;
+
+    public App(Processor processor) {
+        this.processor = processor;
+    }
+
+    public void run(String[] args) {
         String zookeeper = args[0];
         String groupId = args[1];
         String topic = args[2];
@@ -26,7 +34,7 @@ public class App {
         ConsumerConnector consumerConnector = new ConsumerConnectorFactory(consumerConfig).create();
 
         ConsumerExecutor consumerExecutor = new ConsumerExecutor(
-            new com.zanox.application.ConsumerFactory(),
+            new ConsumerFactory(this.processor),
             new MessageStreamFactory(topic, consumerConnector),
             new ExecutorServiceFactory());
         Collection<Future> futureSessions = consumerExecutor.run(numTheads);

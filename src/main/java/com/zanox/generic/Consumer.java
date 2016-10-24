@@ -1,5 +1,7 @@
-package com.zanox.application;
+package com.zanox.generic;
 
+import com.zanox.generic.eventHandler.ErrorInHandlerException;
+import com.zanox.generic.parser.BrokenMessageFormatException;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 
@@ -25,7 +27,15 @@ public class Consumer implements com.zanox.kafka.highlevelconsumer.Consumer {
             String output = "Thread " + threadNumber + ": " + new String(message);
             System.out.println(output);
 
-            processor.process(message);
+            try {
+                processor.process(message);
+            } catch (BrokenMessageFormatException e) {
+                // Log message and move on
+                // ACK
+            } catch (ErrorInHandlerException e) {
+                // Broken implementation
+                // NACK
+            }
         }
 
         System.out.println("Shutting down Thread: " + threadNumber);

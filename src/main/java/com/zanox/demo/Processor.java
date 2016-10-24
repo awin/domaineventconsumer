@@ -1,7 +1,8 @@
-package com.zanox.application;
+package com.zanox.demo;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import com.zanox.generic.parser.BrokenMessageFormatException;
 import com.zanox.demo.event.AdvertiserAcceptedMembershipApplicationEvent;
 import com.zanox.demo.event.AdvertiserSuspendedMembershipEvent;
 import com.zanox.demo.event.DomainEvent;
@@ -9,16 +10,16 @@ import com.zanox.demo.event.PublisherLeftProgrammeEvent;
 import com.zanox.demo.eventHandler.AdvertiserAcceptedMembershipApplicationEventHandler;
 import com.zanox.demo.eventHandler.AdvertiserSuspendedMembershipEventHandler;
 import com.zanox.demo.eventHandler.PublisherLeftProgrammeEventHandler;
-import com.zanox.demo.eventHandler.UnableToHandleEvent;
+import com.zanox.generic.eventHandler.ErrorInHandlerException;
 
-public class Processor {
+public class Processor implements com.zanox.generic.Processor {
     private Gson gson;
 
     public Processor() {
         gson = new Gson();
     }
 
-    public void process(byte[] message) {
+    public void process(byte[] message) throws BrokenMessageFormatException, ErrorInHandlerException {
         try {
             DomainEvent event = gson.fromJson(new String(message), DomainEvent.class);
             String eventName = event.eventName;
@@ -49,8 +50,12 @@ public class Processor {
                     leftHandler.handle(left);
                     break;
             }
-        } catch (JsonParseException | UnableToHandleEvent e) {
+        } catch (JsonParseException e) {
             e.printStackTrace();
+            throw new BrokenMessageFormatException();
+        } catch(RuntimeException e) {
+            e.printStackTrace();
+            throw new ErrorInHandlerException();
         }
     }
 }

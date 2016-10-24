@@ -1,4 +1,4 @@
-package com.zanox.application
+package com.zanox.generic
 
 import kafka.consumer.KafkaStream
 import spock.lang.Specification

@@ -1,10 +1,11 @@
 package com.zanox.demo.eventHandler;
 
+import com.zanox.generic.eventHandler.ErrorInHandlerException;
 import com.zanox.demo.event.AdvertiserSuspendedMembershipEvent;
 import com.zanox.demo.model.Membership;
 import com.zanox.demo.model.MembershipId;
-import com.zanox.application.persistence.MembershipRepository;
-import com.zanox.application.persistence.UnableToFindMembership;
+import com.zanox.demo.persistence.MembershipRepository;
+import com.zanox.demo.persistence.UnableToFindMembership;
 
 public class AdvertiserSuspendedMembershipEventHandler
 {
@@ -18,7 +19,7 @@ public class AdvertiserSuspendedMembershipEventHandler
         this.membershipRepository = membershipRepository;
     }
 
-    public void handle(AdvertiserSuspendedMembershipEvent event) throws UnableToHandleEvent
+    public void handle(AdvertiserSuspendedMembershipEvent event) throws ErrorInHandlerException
     {
         Membership membership;
         MembershipId membershipId = new MembershipId(event.advertiserId, event.publisherId);

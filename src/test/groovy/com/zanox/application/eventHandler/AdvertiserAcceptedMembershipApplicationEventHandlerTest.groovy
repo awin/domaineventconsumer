@@ -3,7 +3,7 @@ package com.zanox.demo.eventHandler
 import com.zanox.demo.event.AdvertiserAcceptedMembershipApplicationEvent
 import com.zanox.demo.model.Membership
 import com.zanox.demo.model.MembershipId
-import com.zanox.application.persistence.MembershipRepository
+import com.zanox.demo.persistence.MembershipRepository
 import com.zanox.demo.event.Data
 import spock.lang.Specification
 

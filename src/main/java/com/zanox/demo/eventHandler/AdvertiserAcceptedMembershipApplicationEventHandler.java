@@ -1,10 +1,11 @@
 package com.zanox.demo.eventHandler;
 
+import com.zanox.generic.eventHandler.ErrorInHandlerException;
 import com.zanox.demo.event.AdvertiserAcceptedMembershipApplicationEvent;
 import com.zanox.demo.model.Membership;
 import com.zanox.demo.model.MembershipId;
-import com.zanox.application.persistence.MembershipRepository;
-import com.zanox.application.persistence.UnableToFindMembership;
+import com.zanox.demo.persistence.MembershipRepository;
+import com.zanox.demo.persistence.UnableToFindMembership;
 
 public class AdvertiserAcceptedMembershipApplicationEventHandler {
     private final MembershipRepository membershipRepository;
@@ -17,7 +18,7 @@ public class AdvertiserAcceptedMembershipApplicationEventHandler {
         this.membershipRepository = membershipRepository;
     }
 
-    public void handle(AdvertiserAcceptedMembershipApplicationEvent event) throws UnableToHandleEvent
+    public void handle(AdvertiserAcceptedMembershipApplicationEvent event) throws ErrorInHandlerException
     {
         Membership membership;
         MembershipId membershipId = new MembershipId(event.data.advertiserId, event.data.publisherId);

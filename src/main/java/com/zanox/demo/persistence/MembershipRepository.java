@@ -1,4 +1,4 @@
-package com.zanox.application.persistence;
+package com.zanox.demo.persistence;
 
 import com.zanox.demo.model.Membership;
 import com.zanox.demo.model.MembershipId;
@@ -9,7 +9,7 @@ public class MembershipRepository {
 
     public MembershipRepository() {
         // @todo refactor
-        this.jedis = new Jedis("d-lhr1-docker-141.zanox.com");
+        this.jedis = new Jedis("d-lhr1-docker-001.zanox.com");
     }
 
     public Membership getByKey(MembershipId id) throws UnableToFindMembership {

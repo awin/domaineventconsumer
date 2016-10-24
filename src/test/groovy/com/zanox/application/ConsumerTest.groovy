@@ -1,5 +1,6 @@
-package com.zanox.application
+package com.zanox.generic
 
+import com.zanox.demo.Processor
 import kafka.consumer.ConsumerIterator
 import kafka.consumer.KafkaStream
 import kafka.message.MessageAndMetadata
