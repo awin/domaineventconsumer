@@ -1,4 +1,4 @@
-package com.zanox.application.event;
+package com.zanox.demo.event;
 
 public class Data {
     public int advertiserId = 0;

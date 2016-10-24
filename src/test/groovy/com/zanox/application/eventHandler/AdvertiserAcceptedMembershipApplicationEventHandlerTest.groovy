@@ -1,10 +1,10 @@
-package com.zanox.application.eventHandler
+package com.zanox.demo.eventHandler
 
-import com.zanox.application.event.AdvertiserAcceptedMembershipApplicationEvent
-import com.zanox.application.model.Membership
-import com.zanox.application.model.MembershipId
+import com.zanox.demo.event.AdvertiserAcceptedMembershipApplicationEvent
+import com.zanox.demo.model.Membership
+import com.zanox.demo.model.MembershipId
 import com.zanox.application.persistence.MembershipRepository
-import com.zanox.application.event.Data
+import com.zanox.demo.event.Data
 import spock.lang.Specification
 
 class AdvertiserAcceptedMembershipEventHandlerTest extends Specification {

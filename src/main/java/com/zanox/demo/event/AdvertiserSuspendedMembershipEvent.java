@@ -1,6 +1,4 @@
-package com.zanox.application.event;
-
-import com.zanox.application.DomainEvent;
+package com.zanox.demo.event;
 
 public class AdvertiserSuspendedMembershipEvent extends DomainEvent {
 

@@ -1,4 +1,4 @@
-package com.zanox.application.model;
+package com.zanox.demo.model;
 
 public class Membership {
     public MembershipId id;

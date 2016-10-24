@@ -1,8 +1,8 @@
-package com.zanox.application.eventHandler;
+package com.zanox.demo.eventHandler;
 
-import com.zanox.application.event.AdvertiserSuspendedMembershipEvent;
-import com.zanox.application.model.Membership;
-import com.zanox.application.model.MembershipId;
+import com.zanox.demo.event.AdvertiserSuspendedMembershipEvent;
+import com.zanox.demo.model.Membership;
+import com.zanox.demo.model.MembershipId;
 import com.zanox.application.persistence.MembershipRepository;
 import com.zanox.application.persistence.UnableToFindMembership;
 

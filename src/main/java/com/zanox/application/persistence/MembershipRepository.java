@@ -1,7 +1,7 @@
 package com.zanox.application.persistence;
 
-import com.zanox.application.model.Membership;
-import com.zanox.application.model.MembershipId;
+import com.zanox.demo.model.Membership;
+import com.zanox.demo.model.MembershipId;
 import redis.clients.jedis.Jedis;
 
 public class MembershipRepository {

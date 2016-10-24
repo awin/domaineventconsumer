@@ -1,24 +1,23 @@
-package com.zanox.application.eventHandler;
+package com.zanox.demo.eventHandler;
 
-import com.zanox.application.event.AdvertiserAcceptedMembershipApplicationEvent;
-import com.zanox.application.model.Membership;
-import com.zanox.application.model.MembershipId;
+import com.zanox.demo.event.PublisherLeftProgrammeEvent;
+import com.zanox.demo.model.Membership;
+import com.zanox.demo.model.MembershipId;
 import com.zanox.application.persistence.MembershipRepository;
 import com.zanox.application.persistence.UnableToFindMembership;
 
-public class AdvertiserAcceptedMembershipApplicationEventHandler
-{
+public class PublisherLeftProgrammeEventHandler {
     private final MembershipRepository membershipRepository;
 
-    public AdvertiserAcceptedMembershipApplicationEventHandler() {
+    public PublisherLeftProgrammeEventHandler() {
         this.membershipRepository = new MembershipRepository();
     }
 
-    public AdvertiserAcceptedMembershipApplicationEventHandler(MembershipRepository membershipRepository) {
+    public PublisherLeftProgrammeEventHandler(MembershipRepository membershipRepository) {
         this.membershipRepository = membershipRepository;
     }
 
-    public void handle(AdvertiserAcceptedMembershipApplicationEvent event) throws UnableToHandleEvent
+    public void handle(PublisherLeftProgrammeEvent event) throws UnableToHandleEvent
     {
         Membership membership;
         MembershipId membershipId = new MembershipId(event.data.advertiserId, event.data.publisherId);
@@ -32,7 +31,8 @@ public class AdvertiserAcceptedMembershipApplicationEventHandler
 
         // activate & persist
         membershipRepository.persist(
-            membership.activate()
+            membership.deactivate()
         );
     }
+
 }

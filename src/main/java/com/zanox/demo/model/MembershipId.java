@@ -1,4 +1,4 @@
-package com.zanox.application.model;
+package com.zanox.demo.model;
 
 /**
  * @todo refactor make attributes read only
