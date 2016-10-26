@@ -24,9 +24,6 @@ public class Consumer implements com.zanox.kafka.highlevelconsumer.Consumer {
         while (it.hasNext()) {
             byte[] message = it.next().message();
 
-            String output = "Thread " + threadNumber + ": " + new String(message);
-            System.out.println(output);
-
             try {
                 processor.process(message);
             } catch (BrokenMessageFormatException e) {

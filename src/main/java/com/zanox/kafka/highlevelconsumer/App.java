@@ -23,7 +23,7 @@ public class App {
         System.out.println("number of threads: " + numberOfThreads);
 
         //reset zookeeper offset to the beginning
-        new ZkOffsetReseter(zookeeper, 2181, groupId).reset();
+        //new ZkOffsetReseter(zookeeper, 2181, groupId).reset();
 
         ConsumerConfig consumerConfig = ConsumerConfigFactory.create(zookeeper, groupId);
         ConsumerConnector consumerConnector = new ConsumerConnectorFactory(consumerConfig).create();
@@ -40,7 +40,6 @@ public class App {
             while (!nextSession.isDone()) {
                 try {
                     Thread.sleep(1000);
-                    System.out.println("Consumer is still running...");
                 } catch (InterruptedException e) {
                     if (!nextSession.isCancelled()) {
                         nextSession.cancel(true);
