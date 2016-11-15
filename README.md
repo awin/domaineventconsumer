@@ -1,27 +1,17 @@
-# Animated-Octopus
-An implementation of the high level kafka consumer. Why Animated Octopus? Github picked it as a random repo name and it
-somehow stuck.
+# Domain Event Consumer Library
+This is a library to help build Consumers that connect to Kafka
 
-### Diagram
+It contains two implementations of consumers, one with automatic commit and another that
+lets you track offsets yourself, for better durability.
 
-![Container graph](http://g.gravizo.com/g?
-  digraph G {
-    rankdir="LR";
-    node [shape = box]
-    Darwin -> KafkaRest
-    KafkaRest -> "Kafka k01"
-	"Kafka k01" -> Zookeeper
-	"animated-octopus" -> Redis
-	"animated-octopus" -> Zookeeper
-	"animated-octopus" -> "Kafka k01"
-	"Membership API" -> Redis
-  }
-)
-
-
-### Run with:  
 ```
-mvn package && java -cp target/highlevelconsumer.jar com.zanox.kafka.highlevelconsumer.App {zookeeper} {group-id} {topic} {num-of-threads}
+# build with
+mvn package
+```
+
+### Try High level consumer:
+```
+java -cp target/highlevelconsumer.jar com.zanox.kafka.highlevelconsumer.App {zookeeper} {group-id} {topic} {num-of-threads}
 ```
 
 **{zookeeper}** - zookeeper host, e.g. localhost:2181  
@@ -29,39 +19,17 @@ mvn package && java -cp target/highlevelconsumer.jar com.zanox.kafka.highlevelco
 **{topic}** - name of the topic  
 **{num-of-threads}** - number of threads to use for the consumer. If you specify more threads than the number of Kafka partitions, some of the threads won't be doing anything because Kafka never allow a single partition to be consumed from more than one thread.  
 
+### Try durable consumer:
+```
+java -cp target/domaineventconsumer.jar com.zanox.generic.PoCDurableConsumer {topic} {seed_kafka_node}
+```
+**{seed_kafka_node}** - Just one of available kafka nodes
+
+Internally the consumer will autodiscover all available nodes
+
 ### Test it:
 A good way to verify all threads work as expected, try to use the following kafka cmd tool 
  
 ```
 watch {path-to-kafka}/bin/kafka-run-class.sh kafka.tools.ConsumerOffsetChecker --topic {topic} --zookeeper {zookeeper} --group {group-id}
 ```
-
-### How to set up a full test
-
-Start with running the required infrastructure, Zookeeper, Kafka, Redis:
-
-Net Host here is required, because we need to connect to Kafka from clients outside of Docker.
-Kafka not really working well with Docker because of hostname problems.
-
-```
-docker run -d --net=host --name zookeeper wurstmeister/zookeeper
-docker run -d --net=host --name k01 yarekt/kafka
-```
-
-Kafka image is currently a patched wurstmeister image, found at `yarektyshchenko/kafka-docker` on Github.
-
-Create a topic `test`:
-```
-docker exec -it k01 bash
-$KAFKA_HOME/bin/kafka-topics.sh --create --replication-factor 1 --partitions 1 --zookeeper localhost:2181 --topic test
-$KAFKA_HOME/bin/kafka-topics.sh --zookeeper localhost:2181 --describe
-```
-
-Start up Redis:
-
-```
-docker run --name redis -p 6379:6379 -d redis
-docker logs -f redis
-```
-
-Now you can connect with your application.
