@@ -66,7 +66,7 @@ public class Consumer {
         for (Map.Entry<Integer, Long> bit : partitionOffsetMap.entrySet()) {
             // Going to more partitions shouldn't be a problem, reducing number of partitions isn't allowed.
             if (!partitionCache.containsKey(bit.getKey())) {
-                throw new RuntimeException("Specified partition doesn't exist in cache");
+                throw new PartitionException("Specified partition doesn't exist in cache");
             }
             Broker leader = partitionCache.get(bit.getKey());
             int partition = bit.getKey();
@@ -95,7 +95,7 @@ public class Consumer {
                     // We asked for an invalid offset. For simple case ask for the last element to reset
                     offset = getOffset(consumer, this.topic, partition, kafka.api.OffsetRequest.LatestTime(), clientName);
                     System.err.println("Offset out of range, earliest offset is " + offset);
-                    throw new RuntimeException("Offset out of range, Cannot safely continue");
+                    throw new OffsetException("Offset out of range, Cannot safely continue");
                     //continue; // Retry this batch
                 }
                 // Throw away consumer
@@ -132,7 +132,7 @@ public class Consumer {
         List<PartitionMetadata> partitions = findPartitionsForTopic(seedBrokers, 9092, topic);
         if (partitions.isEmpty()) {
             System.err.println("Partition list is empty");
-            throw new RuntimeException("Partition list is empty");
+            throw new PartitionException("Partition list is empty");
         }
 
         partitionCache.clear(); // Is this atomic? Should this be ?
@@ -152,7 +152,7 @@ public class Consumer {
 
         if (response.hasError()) {
             System.out.println("Error fetching data Offset Data the Broker. Reason: " + response.errorCode(topic, partition) );
-            return 0;
+            throw new OffsetException("Error fetching offset data from Broker");
         }
         long[] offsets = response.offsets(topic, partition);
         return offsets[0];
