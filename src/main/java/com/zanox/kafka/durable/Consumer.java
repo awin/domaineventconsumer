@@ -26,6 +26,13 @@ public class Consumer {
     private final List<String> seedBrokers;
     private String topic;
 
+    /**
+     * Consumer constructor
+     * Requires a list of seed brokers that will be used for bootstrapping
+     * You don't have to specify the whole list as they will be auto-discovered
+     * @param topic Topic to work on
+     * @param seedBrokers List of seed brokers
+     */
     public Consumer(String topic, List<String> seedBrokers) {
         this.topic = topic;
         this.seedBrokers = seedBrokers;
@@ -33,19 +40,10 @@ public class Consumer {
         getLeaders();
     }
 
-    public void getLeaders() {
-        List<PartitionMetadata> partitions = findPartitionsForTopic(seedBrokers, 9092, topic);
-        if (partitions.isEmpty()) {
-            System.err.println("Partition list is empty");
-            throw new RuntimeException("Partition list is empty");
-        }
-
-        partitionCache.clear(); // Is this atomic? Should this be ?
-        for (PartitionMetadata partition : partitions) {
-            partitionCache.put(partition.partitionId(), partition.leader());
-        }
-    }
-
+    /**
+     * Return list of Partition IDs for the given topic
+     * @return List of Partitions IDs
+     */
     public List<Integer> getAvailablePartitions() {
         List<Integer> list = new ArrayList<>();
         for (Map.Entry<Integer, Broker> partition : this.partitionCache.entrySet()) {
@@ -54,6 +52,14 @@ public class Consumer {
         return list;
     }
 
+    /**
+     * Return batch of messages for these partitions and offsets
+     * This is the main operational method of this library, this is how you get your messages
+     * Offsets are intrinsically attached to their partitions so they always have to be passed together.
+     * Its valid to specify less partitions than are actually available, but other way around throws an exception.
+     * @param partitionOffsetMap Partitions and their offets to look at
+     * @return List of Messages from all partitions
+     */
     public List<Message> getBatchFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
         List<Message> list = new ArrayList<>();
 
@@ -69,18 +75,16 @@ public class Consumer {
             SimpleConsumer consumer = new SimpleConsumer(leader.host(), leader.port(), 100000, 64 * 1024, clientName);
             long offset;
             if (null == bit.getValue()) {
-                offset = getLastOffset(consumer, this.topic, partition, kafka.api.OffsetRequest.EarliestTime(), clientName);
+                offset = getOffset(consumer, this.topic, partition, kafka.api.OffsetRequest.EarliestTime(), clientName);
             } else {
                 offset = bit.getValue();
             }
 
-            // What to do with consuming in a single thread?
-            // Consume in batches, once per partition, in order, up to max batch size
-
             FetchRequest req = new FetchRequestBuilder()
-                        .clientId(clientName)
-                        .addFetch(this.topic, partition, offset, 100000) // Note: this fetchSize of 100000 might need to be increased if large batches are written to Kafka
-                        .build();
+                    .clientId(clientName)
+                    // Note: this fetchSize of 100000 might need to be increased if large batches are written to Kafka
+                    .addFetch(this.topic, partition, offset, 100000)
+                    .build();
             FetchResponse fetchResponse = consumer.fetch(req);
 
             if (fetchResponse.hasError()) {
@@ -89,7 +93,7 @@ public class Consumer {
                 System.err.println("Error fetching data from the Broker:" + leader.host() + " Reason: " + code);
                 if (code == ErrorMapping.OffsetOutOfRangeCode()) {
                     // We asked for an invalid offset. For simple case ask for the last element to reset
-                    offset = getLastOffset(consumer, this.topic, partition, kafka.api.OffsetRequest.LatestTime(), clientName);
+                    offset = getOffset(consumer, this.topic, partition, kafka.api.OffsetRequest.LatestTime(), clientName);
                     System.err.println("Offset out of range, earliest offset is " + offset);
                     throw new RuntimeException("Offset out of range, Cannot safely continue");
                     //continue; // Retry this batch
@@ -124,9 +128,21 @@ public class Consumer {
         return list;
     }
 
+    private void getLeaders() {
+        List<PartitionMetadata> partitions = findPartitionsForTopic(seedBrokers, 9092, topic);
+        if (partitions.isEmpty()) {
+            System.err.println("Partition list is empty");
+            throw new RuntimeException("Partition list is empty");
+        }
 
-    public static long getLastOffset(SimpleConsumer consumer, String topic, int partition,
-                                     long whichTime, String clientName) {
+        partitionCache.clear(); // Is this atomic? Should this be ?
+        for (PartitionMetadata partition : partitions) {
+            partitionCache.put(partition.partitionId(), partition.leader());
+        }
+    }
+
+    private static long getOffset(SimpleConsumer consumer, String topic, int partition,
+                                  long whichTime, String clientName) {
         TopicAndPartition topicAndPartition = new TopicAndPartition(topic, partition);
         Map<TopicAndPartition, PartitionOffsetRequestInfo> requestInfo = new HashMap<>();
         requestInfo.put(topicAndPartition, new PartitionOffsetRequestInfo(whichTime, 1));
@@ -142,12 +158,12 @@ public class Consumer {
         return offsets[0];
     }
 
-    private List<PartitionMetadata> findPartitionsForTopic(List<String> a_seedBrokers, int a_port, String a_topic) {
-        for (String seed : a_seedBrokers) {
+    private List<PartitionMetadata> findPartitionsForTopic(List<String> seedBrokers, int port, String topic) {
+        for (String seed : seedBrokers) {
             SimpleConsumer consumer = null;
             try {
-                consumer = new SimpleConsumer(seed, a_port, 100000, 64 * 1024, "leaderLookup");
-                List<String> topics = Collections.singletonList(a_topic);
+                consumer = new SimpleConsumer(seed, port, 100000, 64 * 1024, "leaderLookup");
+                List<String> topics = Collections.singletonList(topic);
                 TopicMetadataRequest req = new TopicMetadataRequest(topics);
                 TopicMetadataResponse resp = consumer.send(req);
 
@@ -157,10 +173,12 @@ public class Consumer {
                     return item.partitionsMetadata();
                 }
             } catch (Exception e) {
-                System.out.println("Error communicating with Broker [" + seed + "] to list partitions for [" + a_topic
+                System.out.println("Error communicating with Broker [" + seed + "] to list partitions for [" + topic
                         + "] Reason: " + e);
             } finally {
-                if (consumer != null) consumer.close();
+                if (consumer != null) {
+                    consumer.close();
+                }
             }
         }
         return new ArrayList<>();
