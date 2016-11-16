@@ -19,21 +19,22 @@ public class PoCDurableConsumer {
         // All available partitions
         // We can use this to look up which partitions are we responsible for.
         List<Integer> partitions = example.getAvailablePartitions();
-        Map<Integer, Long> OffsetMap = new HashMap<>();
+        Map<Integer, Long> offsetMap = new HashMap<>();
         for (Integer partition : partitions) {
-            OffsetMap.put(partition, null); // BEGINNING specified as `null`
+            offsetMap.put(partition, null); // BEGINNING specified as `null`
         }
-        System.out.println("We start with this offset map: "+OffsetMap);
+        System.out.println("We start with this offset map: " + offsetMap);
         while (true) {
-            List<Message> batch = example.getBatchFromPartitionOffset(OffsetMap);
+            List<Message> batch = example.getBatchFromPartitionOffset(offsetMap);
             for (Message message : batch) {
                 //System.out.print(".");
-                // Record the new offset (Possibly wait for the last message in the batch)
-                OffsetMap.put(message.partition, message.offset);
+                // Record the new offset
+                // This has to be done on every message, because every message could have different partition!
+                offsetMap.put(message.partition, message.offset);
 
             }
-            // Persist OffsetMap.
-            System.out.println(OffsetMap);
+            // Persist offsetMap.
+            System.out.println(offsetMap);
         }
     }
 }
