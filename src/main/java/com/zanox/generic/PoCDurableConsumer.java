@@ -4,6 +4,7 @@ import com.zanox.kafka.durable.Consumer;
 import com.zanox.kafka.durable.Message;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +24,12 @@ public class PoCDurableConsumer {
         for (Integer partition : partitions) {
             offsetMap.put(partition, null); // BEGINNING specified as `null`
         }
-        System.out.println("We start with this offset map: " + offsetMap);
+        System.err.println("We start with this offset map: " + offsetMap);
+
+        // If you want to start from latest offsets do:
+        offsetMap = example.getLatestOffsets();
+        System.err.println("This are the latest offsets: " + offsetMap);
+
         while (true) {
             List<Message> batch = example.getBatchFromPartitionOffset(offsetMap);
             for (Message message : batch) {
@@ -31,10 +37,10 @@ public class PoCDurableConsumer {
                 // Record the new offset
                 // This has to be done on every message, because every message could have different partition!
                 offsetMap.put(message.partition, message.offset);
-
+                System.out.println(new String(message.body));
             }
             // Persist offsetMap.
-            System.out.println(offsetMap);
+            System.err.println(offsetMap);
         }
     }
 }

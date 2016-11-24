@@ -53,6 +53,21 @@ public class Consumer {
     }
 
     /**
+     * Return a map of latest offsets
+     * @return Map of latest offsets
+     */
+    public Map<Integer, Long> getLatestOffsets() {
+        Map<Integer, Long> offsetMap = new HashMap<>();
+        for (Map.Entry<Integer, Broker> partition : this.partitionCache.entrySet()) {
+            String clientName = "Client_" + this.topic + "_" + partition.getKey();
+            SimpleConsumer consumer = new SimpleConsumer(partition.getValue().host(), partition.getValue().port(), 100000, 64 * 1024, clientName);
+            long offset = getOffset(consumer, this.topic, partition.getKey(), OffsetRequest.LatestTime(), clientName);
+            offsetMap.put(partition.getKey(), offset);
+        }
+        return offsetMap;
+    }
+
+    /**
      * Return batch of messages for these partitions and offsets
      * This is the main operational method of this library, this is how you get your messages
      * Offsets are intrinsically attached to their partitions so they always have to be passed together.
