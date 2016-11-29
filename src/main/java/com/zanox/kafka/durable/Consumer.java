@@ -1,5 +1,7 @@
 package com.zanox.kafka.durable;
 
+import com.zanox.kafka.durable.infrastructure.TopicConsumer;
+import com.zanox.kafka.durable.infrastructure.TopicPartition;
 import kafka.api.*;
 import kafka.api.FetchRequest;
 import kafka.cluster.Broker;
@@ -56,10 +58,11 @@ public class Consumer {
      * @return List of Partitions IDs
      */
     public List<Integer> getAvailablePartitions() {
-        getLeaders();
+        TopicConsumer topicConsumer = this.kafkaConsumerFactory.createConsumerForTopic(this.topic, this.seedBrokers);
+        List<TopicPartition> partitions = topicConsumer.getPartitions();
         List<Integer> list = new ArrayList<>();
-        for (Map.Entry<Integer, Broker> partition : this.partitionCache.entrySet()) {
-            list.add(partition.getKey());
+        for (TopicPartition partition : partitions) {
+            list.add(partition.getId());
         }
         return list;
     }
@@ -162,15 +165,12 @@ public class Consumer {
         return list;
     }
 
+    @Deprecated
     private void getLeaders() {
-        List<PartitionMetadata> partitions = findPartitionsForTopic(seedBrokers, 9092, topic);
-        if (partitions.isEmpty()) {
-            throw new PartitionException("Partition list is empty");
-        }
-
-        partitionCache.clear(); // Is this atomic? Should this be ?
-        for (PartitionMetadata partition : partitions) {
-            partitionCache.put(partition.partitionId(), partition.leader());
+        TopicConsumer topicConsumer = this.kafkaConsumerFactory.createConsumerForTopic(this.topic, this.seedBrokers);
+        List<TopicPartition> partitions = topicConsumer.getPartitions();
+        for (TopicPartition partition : partitions) {
+            this.partitionCache.put(partition.getId(), partition.getLeader());
         }
     }
 
@@ -189,35 +189,5 @@ public class Consumer {
         }
         long[] offsets = response.offsets(topic, partition);
         return offsets[0];
-    }
-
-    private List<PartitionMetadata> findPartitionsForTopic(List<String> seedBrokers, int port, String topic) {
-        for (String seed : seedBrokers) {
-            SimpleConsumer consumer = null;
-            try {
-                consumer = this.kafkaConsumerFactory.createSimpleConsumer(
-                        seed, port, 100000, 64 * 1024, "leaderLookup"
-                );
-                List<String> topics = Collections.singletonList(topic);
-                TopicMetadataRequest req = new TopicMetadataRequest(topics);
-                TopicMetadataResponse resp = consumer.send(req);
-
-                List<TopicMetadata> metaData = resp.topicsMetadata();
-                for (TopicMetadata item : metaData) {
-                    // Only one topic
-                    return item.partitionsMetadata();
-                }
-            } catch (Exception e) {
-                // @TODO: Rewrite this to only throw exception if none of the brokers responded
-                e.printStackTrace();
-                System.out.println("Error communicating with Broker [" + seed + "] to list partitions for [" + topic
-                        + "] Reason: " + e);
-            } finally {
-                if (consumer != null) {
-                    consumer.close();
-                }
-            }
-        }
-        return new ArrayList<>();
     }
 }
