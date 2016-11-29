@@ -24,7 +24,21 @@ import java.util.Map;
 public class Consumer {
     private final Map<Integer, Broker> partitionCache;
     private final List<String> seedBrokers;
+    private final KafkaConsumerFactory kafkaConsumerFactory;
     private String topic;
+
+    /**
+     * Constructor with Injectable ConsumerFactory
+     * @param kafkaConsumerFactory Kafka SimpleConsumer factory
+     * @param topic Topic to work on
+     * @param seedBrokers List of seed brokers
+     */
+    public Consumer(KafkaConsumerFactory kafkaConsumerFactory, String topic, List<String> seedBrokers) {
+        this.kafkaConsumerFactory = kafkaConsumerFactory;
+        this.topic = topic;
+        this.seedBrokers = seedBrokers;
+        partitionCache = new HashMap<>();
+    }
 
     /**
      * Consumer constructor
@@ -34,10 +48,7 @@ public class Consumer {
      * @param seedBrokers List of seed brokers
      */
     public Consumer(String topic, List<String> seedBrokers) {
-        this.topic = topic;
-        this.seedBrokers = seedBrokers;
-        partitionCache = new HashMap<>();
-        getLeaders();
+        this(new KafkaConsumerFactory(), topic, seedBrokers);
     }
 
     /**
@@ -45,6 +56,7 @@ public class Consumer {
      * @return List of Partitions IDs
      */
     public List<Integer> getAvailablePartitions() {
+        getLeaders();
         List<Integer> list = new ArrayList<>();
         for (Map.Entry<Integer, Broker> partition : this.partitionCache.entrySet()) {
             list.add(partition.getKey());
@@ -57,10 +69,15 @@ public class Consumer {
      * @return Map of latest offsets
      */
     public Map<Integer, Long> getLatestOffsets() {
+        getLeaders();
         Map<Integer, Long> offsetMap = new HashMap<>();
         for (Map.Entry<Integer, Broker> partition : this.partitionCache.entrySet()) {
             String clientName = "Client_" + this.topic + "_" + partition.getKey();
-            SimpleConsumer consumer = new SimpleConsumer(partition.getValue().host(), partition.getValue().port(), 100000, 64 * 1024, clientName);
+            SimpleConsumer consumer = this.kafkaConsumerFactory.createSimpleConsumer(
+                    partition.getValue().host(),
+                    partition.getValue().port(),
+                    100000, 64 * 1024, clientName
+            );
             long offset = getOffset(consumer, this.topic, partition.getKey(), OffsetRequest.LatestTime(), clientName);
             offsetMap.put(partition.getKey(), offset);
         }
@@ -87,7 +104,9 @@ public class Consumer {
             int partition = bit.getKey();
 
             String clientName = "Client_" + this.topic + "_" + partition;
-            SimpleConsumer consumer = new SimpleConsumer(leader.host(), leader.port(), 100000, 64 * 1024, clientName);
+            SimpleConsumer consumer = this.kafkaConsumerFactory.createSimpleConsumer(
+                    leader.host(), leader.port(), 100000, 64 * 1024, clientName
+            );
             long offset;
             if (null == bit.getValue()) {
                 offset = getOffset(consumer, this.topic, partition, kafka.api.OffsetRequest.EarliestTime(), clientName);
@@ -146,7 +165,6 @@ public class Consumer {
     private void getLeaders() {
         List<PartitionMetadata> partitions = findPartitionsForTopic(seedBrokers, 9092, topic);
         if (partitions.isEmpty()) {
-            System.err.println("Partition list is empty");
             throw new PartitionException("Partition list is empty");
         }
 
@@ -177,7 +195,9 @@ public class Consumer {
         for (String seed : seedBrokers) {
             SimpleConsumer consumer = null;
             try {
-                consumer = new SimpleConsumer(seed, port, 100000, 64 * 1024, "leaderLookup");
+                consumer = this.kafkaConsumerFactory.createSimpleConsumer(
+                        seed, port, 100000, 64 * 1024, "leaderLookup"
+                );
                 List<String> topics = Collections.singletonList(topic);
                 TopicMetadataRequest req = new TopicMetadataRequest(topics);
                 TopicMetadataResponse resp = consumer.send(req);
@@ -188,6 +208,8 @@ public class Consumer {
                     return item.partitionsMetadata();
                 }
             } catch (Exception e) {
+                // @TODO: Rewrite this to only throw exception if none of the brokers responded
+                e.printStackTrace();
                 System.out.println("Error communicating with Broker [" + seed + "] to list partitions for [" + topic
                         + "] Reason: " + e);
             } finally {
