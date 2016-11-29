@@ -2,11 +2,11 @@ package com.zanox.kafka.durable.infrastructure;
 
 import kafka.cluster.Broker;
 
-public class TopicPartition {
+public class PartitionLeader {
     private Integer id;
     private Broker leader;
 
-    public TopicPartition(Integer id, Broker leader) {
+    public PartitionLeader(Integer id, Broker leader) {
         this.id = id;
         this.leader = leader;
     }

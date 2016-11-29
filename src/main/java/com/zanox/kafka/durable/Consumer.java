@@ -1,7 +1,7 @@
 package com.zanox.kafka.durable;
 
 import com.zanox.kafka.durable.infrastructure.TopicConsumer;
-import com.zanox.kafka.durable.infrastructure.TopicPartition;
+import com.zanox.kafka.durable.infrastructure.PartitionLeader;
 import kafka.api.*;
 import kafka.api.FetchRequest;
 import kafka.cluster.Broker;
@@ -9,16 +9,11 @@ import kafka.common.ErrorMapping;
 import kafka.common.TopicAndPartition;
 import kafka.javaapi.FetchResponse;
 import kafka.javaapi.OffsetResponse;
-import kafka.javaapi.PartitionMetadata;
-import kafka.javaapi.TopicMetadata;
-import kafka.javaapi.TopicMetadataRequest;
-import kafka.javaapi.TopicMetadataResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.message.MessageAndOffset;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,9 +54,9 @@ public class Consumer {
      */
     public List<Integer> getAvailablePartitions() {
         TopicConsumer topicConsumer = this.kafkaConsumerFactory.createConsumerForTopic(this.topic, this.seedBrokers);
-        List<TopicPartition> partitions = topicConsumer.getPartitions();
+        List<PartitionLeader> partitions = topicConsumer.getPartitions();
         List<Integer> list = new ArrayList<>();
-        for (TopicPartition partition : partitions) {
+        for (PartitionLeader partition : partitions) {
             list.add(partition.getId());
         }
         return list;
@@ -168,8 +163,8 @@ public class Consumer {
     @Deprecated
     private void getLeaders() {
         TopicConsumer topicConsumer = this.kafkaConsumerFactory.createConsumerForTopic(this.topic, this.seedBrokers);
-        List<TopicPartition> partitions = topicConsumer.getPartitions();
-        for (TopicPartition partition : partitions) {
+        List<PartitionLeader> partitions = topicConsumer.getPartitions();
+        for (PartitionLeader partition : partitions) {
             this.partitionCache.put(partition.getId(), partition.getLeader());
         }
     }

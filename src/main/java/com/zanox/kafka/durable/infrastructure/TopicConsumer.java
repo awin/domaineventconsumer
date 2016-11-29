@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class TopicConsumer {
     private KafkaConsumerFactory kafkaConsumerFactory;
@@ -28,7 +29,7 @@ public class TopicConsumer {
         this.brokers = brokers;
     }
 
-    public List<TopicPartition> getPartitions() {
+    public List<PartitionLeader> getPartitions() {
         List<String> topics = Collections.singletonList(topic);
         TopicMetadataRequest req = new TopicMetadataRequest(topics);
 
@@ -54,14 +55,10 @@ public class TopicConsumer {
                 throw new PartitionException("Partition list is empty");
             }
 
-            List<TopicPartition> results = new ArrayList<>();
-            f.get().forEach(partitionMetadata -> {
-                results.add(new TopicPartition(
-                        partitionMetadata.partitionId(),
-                        partitionMetadata.leader()
-                ));
-            });
-            return results;
+            return f.get().stream()
+                    .map(partitionMetadata ->
+                            new PartitionLeader(partitionMetadata.partitionId(), partitionMetadata.leader()))
+                    .collect(Collectors.toList());
         }
         throw new PartitionException("Can't find any partitions");
     }
