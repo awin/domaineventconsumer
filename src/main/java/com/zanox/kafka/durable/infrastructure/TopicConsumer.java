@@ -63,7 +63,7 @@ public class TopicConsumer {
 
             Optional<List<PartitionMetadata>> f = metaData.stream()
                     .map(TopicMetadata::partitionsMetadata)
-                    .filter(List::isEmpty)
+                    .filter(list -> !list.isEmpty())
                     .findAny();
             if (!f.isPresent()) {
                 throw new PartitionException("Partition list is empty");
