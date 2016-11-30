@@ -129,6 +129,7 @@ public class Consumer {
      * @return List of Messages from all partitions
      */
     public List<Message> getBatchFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
+        getLeaders();
         List<Message> list = new ArrayList<>();
 
         // Loop through the provided partition map
