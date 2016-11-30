@@ -30,6 +30,7 @@ public class FetchConsumer {
         return offset;
     }
 
+    // @TODO: Change this to work on a list of partitions
     @Deprecated
     private static long getOffset(SimpleConsumer consumer, String topic, int partition,
                                   long whichTime, String clientName) {

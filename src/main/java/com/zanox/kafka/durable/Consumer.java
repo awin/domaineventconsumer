@@ -13,6 +13,7 @@ import kafka.common.TopicAndPartition;
 import kafka.javaapi.FetchResponse;
 import kafka.javaapi.OffsetResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
+import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.MessageAndOffset;
 
 import java.nio.ByteBuffer;
@@ -84,6 +85,39 @@ public class Consumer {
         });
         return offsetMap;
     }
+    private ByteBufferMessageSet getBatch(String topic, int partition, Broker leader, Long offset) {
+        String clientName = "Client_" + topic + "_" + partition;
+        SimpleConsumer consumer = this.kafkaConsumerFactory.simpleConsumer(
+                leader.host(), leader.port(), 100000, 64 * 1024, clientName
+        );
+        if (null == offset) {
+            offset = getOffset(consumer, topic, partition, kafka.api.OffsetRequest.EarliestTime(), clientName);
+        }
+
+        FetchRequest req = new FetchRequestBuilder()
+                .clientId(clientName)
+                // Note: this fetchSize of 100000 might need to be increased if large batches are written to Kafka
+                .addFetch(topic, partition, offset, 100000)
+                .build();
+        FetchResponse fetchResponse = consumer.fetch(req);
+        consumer.close();
+
+        if (fetchResponse.hasError()) {
+            // Something went wrong!
+            short code = fetchResponse.errorCode(topic, partition);
+            System.err.println("Error fetching data from the Broker:" + leader.host() + " Reason: " + code);
+            if (code == ErrorMapping.OffsetOutOfRangeCode()) {
+                // We asked for an invalid offset. For simple case ask for the last element to reset
+                throw new OffsetException("Offset out of range, Cannot safely continue");
+                //continue; // Retry this batch
+            }
+            // Throw away consumer
+            consumer.close();
+            throw new RuntimeException("Fatal error");
+        }
+        return fetchResponse.messageSet(topic, partition);
+    }
+
 
     /**
      * Return batch of messages for these partitions and offsets
@@ -97,51 +131,18 @@ public class Consumer {
     public List<Message> getBatchFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
         List<Message> list = new ArrayList<>();
 
+        // Loop through the provided partition map
+        // @TODO: Convert to stream for ability to add parallelism.
         for (Map.Entry<Integer, Long> bit : partitionOffsetMap.entrySet()) {
-            // Going to more partitions shouldn't be a problem, reducing number of partitions isn't allowed.
-            if (!partitionCache.containsKey(bit.getKey())) {
-                throw new PartitionException("Specified partition doesn't exist in cache");
-            }
-            Broker leader = partitionCache.get(bit.getKey());
             int partition = bit.getKey();
+            Long offset = bit.getValue();
 
-            String clientName = "Client_" + this.topic + "_" + partition;
-            SimpleConsumer consumer = this.kafkaConsumerFactory.simpleConsumer(
-                    leader.host(), leader.port(), 100000, 64 * 1024, clientName
-            );
-            long offset;
-            if (null == bit.getValue()) {
-                offset = getOffset(consumer, this.topic, partition, kafka.api.OffsetRequest.EarliestTime(), clientName);
-            } else {
-                offset = bit.getValue();
-            }
+            Broker leader = getLeaderForPartition(partition);
 
-            FetchRequest req = new FetchRequestBuilder()
-                    .clientId(clientName)
-                    // Note: this fetchSize of 100000 might need to be increased if large batches are written to Kafka
-                    .addFetch(this.topic, partition, offset, 100000)
-                    .build();
-            FetchResponse fetchResponse = consumer.fetch(req);
+            // GET BATCH (topic, partition, leader, offset);
+            ByteBufferMessageSet messageSet = getBatch(topic, partition, leader, offset);
 
-            if (fetchResponse.hasError()) {
-                // Something went wrong!
-                short code = fetchResponse.errorCode(this.topic, partition);
-                System.err.println("Error fetching data from the Broker:" + leader.host() + " Reason: " + code);
-                if (code == ErrorMapping.OffsetOutOfRangeCode()) {
-                    // We asked for an invalid offset. For simple case ask for the last element to reset
-                    offset = getOffset(consumer, this.topic, partition, kafka.api.OffsetRequest.LatestTime(), clientName);
-                    System.err.println("Offset out of range, earliest offset is " + offset);
-                    throw new OffsetException("Offset out of range, Cannot safely continue");
-                    //continue; // Retry this batch
-                }
-                // Throw away consumer
-                consumer.close();
-                // Force new leader lookup.
-                getLeaders();
-                continue;
-            }
-
-            for (MessageAndOffset messageAndOffset : fetchResponse.messageSet(topic, partition)) {
+            for (MessageAndOffset messageAndOffset : messageSet) {
                 long currentOffset = messageAndOffset.offset();
                 if (currentOffset < offset) {
                     System.out.println("Found an old offset: " + currentOffset + " Expecting: " + offset);
@@ -159,9 +160,18 @@ public class Consumer {
                 message.offset = offset;
                 list.add(message);
             }
-            consumer.close();
         }
         return list;
+    }
+
+    private Broker getLeaderForPartition(Integer partition) {
+        // If Partition is not in the cache,
+        if (!partitionCache.containsKey(partition)) {
+            // @TODO: Look it up
+            throw new PartitionException("Specified partition doesn't exist in cache");
+        }
+        Broker leader = partitionCache.get(partition);
+        return leader;
     }
 
     @Deprecated
