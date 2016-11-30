@@ -1,7 +1,7 @@
 package groovy.com.zanox.kafka.durable
 
 import com.zanox.kafka.durable.Consumer
-import com.zanox.kafka.durable.KafkaConsumerFactory
+import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory
 import com.zanox.kafka.durable.infrastructure.TopicConsumer
 import com.zanox.kafka.durable.infrastructure.PartitionLeader
 import kafka.cluster.Broker
@@ -28,7 +28,7 @@ class ConsumerTest extends Specification {
 
         then:
         assert partitions == [0, 1]
-        1 * consumerFactory.createConsumerForTopic("topic", ["BrokerSeedURL"]) >> {
+        1 * consumerFactory.topicConsumer("topic", ["BrokerSeedURL"]) >> {
             def topicConsumer = Mock(TopicConsumer)
             1 * topicConsumer.getPartitions() >> {
                 List<PartitionLeader> partitionList = new ArrayList<>()

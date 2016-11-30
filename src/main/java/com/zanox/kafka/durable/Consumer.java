@@ -1,5 +1,8 @@
 package com.zanox.kafka.durable;
 
+import com.zanox.kafka.durable.infrastructure.FetchConsumer;
+import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory;
+import com.zanox.kafka.durable.infrastructure.PartitionException;
 import com.zanox.kafka.durable.infrastructure.TopicConsumer;
 import com.zanox.kafka.durable.infrastructure.PartitionLeader;
 import kafka.api.*;
@@ -17,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Consumer {
     private final Map<Integer, Broker> partitionCache;
@@ -26,7 +30,7 @@ public class Consumer {
 
     /**
      * Constructor with Injectable ConsumerFactory
-     * @param kafkaConsumerFactory Kafka SimpleConsumer factory
+     * @param kafkaConsumerFactory Kafka Consumer factory
      * @param topic Topic to work on
      * @param seedBrokers List of seed brokers
      */
@@ -50,33 +54,28 @@ public class Consumer {
 
     /**
      * Return list of Partition IDs for the given topic
+     * Metadata API
      * @return List of Partitions IDs
      */
     public List<Integer> getAvailablePartitions() {
-        TopicConsumer topicConsumer = this.kafkaConsumerFactory.createConsumerForTopic(this.topic, this.seedBrokers);
-        List<PartitionLeader> partitions = topicConsumer.getPartitions();
-        List<Integer> list = new ArrayList<>();
-        for (PartitionLeader partition : partitions) {
-            list.add(partition.getId());
-        }
-        return list;
+        TopicConsumer topicConsumer = this.kafkaConsumerFactory.topicConsumer(this.topic, this.seedBrokers);
+        return topicConsumer.getPartitions().stream()
+                .map(PartitionLeader::getPartitionId)
+                .collect(Collectors.toList());
     }
 
     /**
      * Return a map of latest offsets
+     * Fetch/Offet API
+     * @TODO: Refactor
      * @return Map of latest offsets
      */
     public Map<Integer, Long> getLatestOffsets() {
         getLeaders();
         Map<Integer, Long> offsetMap = new HashMap<>();
+        FetchConsumer fetchConsumer = this.kafkaConsumerFactory.fetchConsumer();
         for (Map.Entry<Integer, Broker> partition : this.partitionCache.entrySet()) {
-            String clientName = "Client_" + this.topic + "_" + partition.getKey();
-            SimpleConsumer consumer = this.kafkaConsumerFactory.createSimpleConsumer(
-                    partition.getValue().host(),
-                    partition.getValue().port(),
-                    100000, 64 * 1024, clientName
-            );
-            long offset = getOffset(consumer, this.topic, partition.getKey(), OffsetRequest.LatestTime(), clientName);
+            long offset = fetchConsumer.getOffset(this.topic, partition.getValue(), partition.getKey());
             offsetMap.put(partition.getKey(), offset);
         }
         return offsetMap;
@@ -87,6 +86,7 @@ public class Consumer {
      * This is the main operational method of this library, this is how you get your messages
      * Offsets are intrinsically attached to their partitions so they always have to be passed together.
      * Its valid to specify less partitions than are actually available, but other way around throws an exception.
+     * @TODO: Refactor
      * @param partitionOffsetMap Partitions and their offets to look at
      * @return List of Messages from all partitions
      */
@@ -102,7 +102,7 @@ public class Consumer {
             int partition = bit.getKey();
 
             String clientName = "Client_" + this.topic + "_" + partition;
-            SimpleConsumer consumer = this.kafkaConsumerFactory.createSimpleConsumer(
+            SimpleConsumer consumer = this.kafkaConsumerFactory.simpleConsumer(
                     leader.host(), leader.port(), 100000, 64 * 1024, clientName
             );
             long offset;
@@ -162,13 +162,14 @@ public class Consumer {
 
     @Deprecated
     private void getLeaders() {
-        TopicConsumer topicConsumer = this.kafkaConsumerFactory.createConsumerForTopic(this.topic, this.seedBrokers);
+        TopicConsumer topicConsumer = this.kafkaConsumerFactory.topicConsumer(this.topic, this.seedBrokers);
         List<PartitionLeader> partitions = topicConsumer.getPartitions();
         for (PartitionLeader partition : partitions) {
-            this.partitionCache.put(partition.getId(), partition.getLeader());
+            this.partitionCache.put(partition.getPartitionId(), partition.getLeader());
         }
     }
 
+    @Deprecated
     private static long getOffset(SimpleConsumer consumer, String topic, int partition,
                                   long whichTime, String clientName) {
         TopicAndPartition topicAndPartition = new TopicAndPartition(topic, partition);

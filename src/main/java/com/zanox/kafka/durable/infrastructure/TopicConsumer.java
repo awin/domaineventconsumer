@@ -1,7 +1,5 @@
 package com.zanox.kafka.durable.infrastructure;
 
-import com.zanox.kafka.durable.KafkaConsumerFactory;
-import com.zanox.kafka.durable.PartitionException;
 import kafka.javaapi.PartitionMetadata;
 import kafka.javaapi.TopicMetadata;
 import kafka.javaapi.TopicMetadataRequest;
@@ -14,6 +12,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * This class is an abstraction over a Topic
+ * encapsulating multiple Partitions, Brokers, and
+ * leaders of these partitions.
+ *
+ * TopicConsumer exists over a specific Topic
+ * and cannot know anything about Leaders or Partitions
+ * and especially Offsets. It can however look up
+ * Partitions and Leaders.
+ *
+ * Metadata API
+ */
 public class TopicConsumer {
     private KafkaConsumerFactory kafkaConsumerFactory;
     private final String topic;
@@ -29,6 +39,10 @@ public class TopicConsumer {
         this.brokers = brokers;
     }
 
+    /**
+     * Get Partitions and their Leaders for Topic
+     * @return List of Partitions and their Leaders
+     */
     public List<PartitionLeader> getPartitions() {
         List<String> topics = Collections.singletonList(topic);
         TopicMetadataRequest req = new TopicMetadataRequest(topics);
@@ -36,7 +50,7 @@ public class TopicConsumer {
         for (String broker : brokers) {
             List<TopicMetadata> metaData = new ArrayList<>();
             try {
-                SimpleConsumer consumer = this.kafkaConsumerFactory.createSimpleConsumer(
+                SimpleConsumer consumer = this.kafkaConsumerFactory.simpleConsumer(
                         broker, 9092, 100000, 64 * 1024, "leaderLookup"
                 );
                 TopicMetadataResponse resp = consumer.send(req);

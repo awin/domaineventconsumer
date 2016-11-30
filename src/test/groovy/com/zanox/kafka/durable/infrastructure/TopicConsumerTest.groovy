@@ -1,7 +1,7 @@
 package groovy.com.zanox.kafka.durable.infrastructure
 
-import com.zanox.kafka.durable.KafkaConsumerFactory
-import com.zanox.kafka.durable.PartitionException
+import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory
+import com.zanox.kafka.durable.infrastructure.PartitionException
 import com.zanox.kafka.durable.infrastructure.TopicConsumer
 import kafka.javaapi.TopicMetadata
 import kafka.javaapi.TopicMetadataResponse
@@ -19,7 +19,7 @@ class TopicConsumerTest extends Specification {
         topicConsumer.getPartitions()
 
         then:
-        1 * consumerFactory.createSimpleConsumer("BrokerSeedURL", 9092, _, _, "leaderLookup") >> {
+        1 * consumerFactory.simpleConsumer("BrokerSeedURL", 9092, _, _, "leaderLookup") >> {
             def kafkaSimpleConsumer = Mock(SimpleConsumer)
             1 * kafkaSimpleConsumer.close()
             1 * kafkaSimpleConsumer.send(_) >> {
