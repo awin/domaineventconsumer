@@ -1,6 +1,7 @@
 package groovy.com.zanox.kafka.durable
 
 import com.zanox.kafka.durable.Consumer
+import com.zanox.kafka.durable.infrastructure.FetchConsumer
 import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory
 import com.zanox.kafka.durable.infrastructure.TopicConsumer
 import com.zanox.kafka.durable.infrastructure.PartitionLeader
@@ -37,6 +38,45 @@ class ConsumerTest extends Specification {
                 return partitionList;
             }
             return topicConsumer
+        }
+        0 * _
+    }
+
+    def "it can fetch latest offsets"() {
+        setup:
+        List<String> list = Collections.singletonList("BrokerSeedURL");
+        def consumerFactory = Mock(KafkaConsumerFactory)
+        def consumer = new Consumer(consumerFactory, "topic", list)
+        def leader = Mock(Broker)
+
+        def pl1 = Mock(PartitionLeader)
+        def pl2 = Mock(PartitionLeader)
+
+        when:
+        def offsets = consumer.getLatestOffsets()
+
+        then:
+        assert offsets == [0: 2L, 1: 42L]
+        2 * pl1.getPartitionId() >> 0
+        1 * pl1.getLeader() >> leader
+        2 * pl2.getPartitionId() >> 1
+        1 * pl2.getLeader() >> leader
+
+        1 * consumerFactory.topicConsumer("topic", list) >> {
+            def topicConsumer = Mock(TopicConsumer)
+            1 * topicConsumer.getPartitions() >> {
+                List<PartitionLeader> partitions = new ArrayList<>();
+                partitions.add(pl1)
+                partitions.add(pl2)
+                return partitions
+            }
+            return topicConsumer
+        }
+        1 * consumerFactory.fetchConsumer() >> {
+            def fetchConsumer = Mock(FetchConsumer)
+            1 * fetchConsumer.getOffset("topic", leader, 0) >> 2L
+            1 * fetchConsumer.getOffset("topic", leader, 1) >> 42L
+            return fetchConsumer
         }
         0 * _
     }

@@ -67,17 +67,21 @@ public class Consumer {
     /**
      * Return a map of latest offsets
      * Fetch/Offet API
-     * @TODO: Refactor
      * @return Map of latest offsets
      */
     public Map<Integer, Long> getLatestOffsets() {
-        getLeaders();
-        Map<Integer, Long> offsetMap = new HashMap<>();
+        TopicConsumer topicConsumer = this.kafkaConsumerFactory.topicConsumer(this.topic, this.seedBrokers);
         FetchConsumer fetchConsumer = this.kafkaConsumerFactory.fetchConsumer();
-        for (Map.Entry<Integer, Broker> partition : this.partitionCache.entrySet()) {
-            long offset = fetchConsumer.getOffset(this.topic, partition.getValue(), partition.getKey());
-            offsetMap.put(partition.getKey(), offset);
-        }
+
+        Map<Integer, Long> offsetMap = new HashMap<>();
+        topicConsumer.getPartitions().forEach(partitionLeader -> {
+            offsetMap.put(
+                    partitionLeader.getPartitionId(),
+                    fetchConsumer.getOffset(
+                            this.topic, partitionLeader.getLeader(), partitionLeader.getPartitionId()
+                    )
+            );
+        });
         return offsetMap;
     }
 
