@@ -139,16 +139,12 @@ public class Consumer {
             Long offset = bit.getValue();
 
             Broker leader = getLeaderForPartition(partition);
-
-            // GET BATCH (topic, partition, leader, offset);
             ByteBufferMessageSet messageSet = getBatch(topic, partition, leader, offset);
 
             for (MessageAndOffset messageAndOffset : messageSet) {
                 long currentOffset = messageAndOffset.offset();
-                if (currentOffset < offset) {
-                    System.out.println("Found an old offset: " + currentOffset + " Expecting: " + offset);
-                    continue;
-                }
+                assert currentOffset <= offset;
+
                 offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
                 ByteBuffer payload = messageAndOffset.message().payload();
 
@@ -187,15 +183,6 @@ public class Consumer {
         }
         Broker leader = partitionCache.get(partition);
         return leader;
-    }
-
-    @Deprecated
-    private void getLeaders() {
-        TopicConsumer topicConsumer = this.kafkaConsumerFactory.topicConsumer(this.topic, this.seedBrokers);
-        List<PartitionLeader> partitions = topicConsumer.getPartitions();
-        for (PartitionLeader partition : partitions) {
-            this.partitionCache.put(partition.getPartitionId(), partition.getLeader());
-        }
     }
 
     @Deprecated

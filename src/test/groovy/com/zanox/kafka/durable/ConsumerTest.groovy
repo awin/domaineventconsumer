@@ -6,7 +6,14 @@ import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory
 import com.zanox.kafka.durable.infrastructure.TopicConsumer
 import com.zanox.kafka.durable.infrastructure.PartitionLeader
 import kafka.cluster.Broker
+import kafka.javaapi.FetchResponse
+import kafka.javaapi.consumer.SimpleConsumer
+import kafka.javaapi.message.ByteBufferMessageSet
+import kafka.message.Message
+import kafka.message.MessageAndOffset
 import spock.lang.Specification
+
+import java.nio.ByteBuffer
 
 class ConsumerTest extends Specification {
     def "it can be instantiated"() {
@@ -77,6 +84,64 @@ class ConsumerTest extends Specification {
             1 * fetchConsumer.getOffset("topic", leader, 0) >> 2L
             1 * fetchConsumer.getOffset("topic", leader, 1) >> 42L
             return fetchConsumer
+        }
+        0 * _
+    }
+
+    def "It can get a batch of messages"() {
+        setup:
+        List<String> list = Collections.singletonList("BrokerSeedURL");
+        def consumerFactory = Mock(KafkaConsumerFactory)
+        def consumer = new Consumer(consumerFactory, "topic", list);
+        Map<Integer, Long> offsetMap = new HashMap<>();
+        offsetMap.put(1, 42L);
+
+        when:
+        def batch = consumer.getBatchFromPartitionOffset(offsetMap)
+
+        then:
+        assert batch.size() == 1
+        with(batch.first()) {
+            assert body == "body".bytes
+            assert partition == 1
+            assert offset == 43L
+        }
+        1 * consumerFactory.topicConsumer("topic", list) >> {
+            def topicConsumer = Mock(TopicConsumer)
+            def partitionLeader = Mock(PartitionLeader)
+            1 * partitionLeader.getPartitionId() >> 1
+            1 * partitionLeader.getLeader() >> {
+                def leader = Mock(Broker)
+                1 * leader.host() >> "foo"
+                1 * leader.port() >> 1337
+                return leader
+            }
+            1 * topicConsumer.getPartitions() >> Collections.singletonList(partitionLeader)
+            return topicConsumer
+        }
+        1 * consumerFactory.simpleConsumer("foo", 1337, _, _, _) >> {
+            def simpleConsumer = Mock(SimpleConsumer)
+            1 * simpleConsumer.close()
+            1 * simpleConsumer.fetch(_) >> {
+                def fetchResponse = Mock(FetchResponse)
+                1 * fetchResponse.hasError() >> false
+                1 * fetchResponse.messageSet("topic", 1) >> {
+                    def messageSet = Mock(ByteBufferMessageSet)
+                    1 * messageSet.iterator() >> {
+                        def iterator = Mock(Iterator)
+                        2 * iterator.hasNext() >>> [true, false]
+                        1 * iterator.next() >> {
+                            def message = Mock(Message)
+                            1 * message.payload() >> ByteBuffer.wrap("body".bytes)
+                            return new MessageAndOffset(message, 42L)
+                        }
+                        return iterator
+                    }
+                    return messageSet
+                }
+                return fetchResponse
+            }
+            return simpleConsumer
         }
         0 * _
     }
