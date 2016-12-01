@@ -9,9 +9,7 @@ import kafka.api.*;
 import kafka.api.FetchRequest;
 import kafka.cluster.Broker;
 import kafka.common.ErrorMapping;
-import kafka.common.TopicAndPartition;
 import kafka.javaapi.FetchResponse;
-import kafka.javaapi.OffsetResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.MessageAndOffset;
@@ -92,7 +90,8 @@ public class Consumer {
                 leader.host(), leader.port(), 100000, 64 * 1024, clientName
         );
         if (null == offset) {
-            offset = getOffset(consumer, topic, partition, kafka.api.OffsetRequest.EarliestTime(), clientName);
+            FetchConsumer fetchConsumer = this.kafkaConsumerFactory.fetchConsumer();
+            offset = fetchConsumer.getOffset(topic, leader, partition);
         }
 
         FetchRequest req = new FetchRequestBuilder()
@@ -183,23 +182,5 @@ public class Consumer {
         }
         Broker leader = partitionCache.get(partition);
         return leader;
-    }
-
-    @Deprecated
-    private static long getOffset(SimpleConsumer consumer, String topic, int partition,
-                                  long whichTime, String clientName) {
-        TopicAndPartition topicAndPartition = new TopicAndPartition(topic, partition);
-        Map<TopicAndPartition, PartitionOffsetRequestInfo> requestInfo = new HashMap<>();
-        requestInfo.put(topicAndPartition, new PartitionOffsetRequestInfo(whichTime, 1));
-        kafka.javaapi.OffsetRequest request = new kafka.javaapi.OffsetRequest(
-                requestInfo, kafka.api.OffsetRequest.CurrentVersion(), clientName);
-        OffsetResponse response = consumer.getOffsetsBefore(request);
-
-        if (response.hasError()) {
-            System.out.println("Error fetching data Offset Data the Broker. Reason: " + response.errorCode(topic, partition) );
-            throw new OffsetException("Error fetching offset data from Broker");
-        }
-        long[] offsets = response.offsets(topic, partition);
-        return offsets[0];
     }
 }
