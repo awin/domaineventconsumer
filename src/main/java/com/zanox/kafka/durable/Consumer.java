@@ -2,26 +2,22 @@ package com.zanox.kafka.durable;
 
 import com.zanox.kafka.durable.infrastructure.FetchConsumer;
 import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory;
+import com.zanox.kafka.durable.infrastructure.MessageConsumer;
 import com.zanox.kafka.durable.infrastructure.PartitionException;
 import com.zanox.kafka.durable.infrastructure.TopicConsumer;
 import com.zanox.kafka.durable.infrastructure.PartitionLeader;
-import kafka.api.*;
-import kafka.api.FetchRequest;
 import kafka.cluster.Broker;
-import kafka.common.ErrorMapping;
-import kafka.javaapi.FetchResponse;
-import kafka.javaapi.consumer.SimpleConsumer;
-import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.MessageAndOffset;
-
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class Consumer {
+    private static final boolean EXECUTE_MAPS_IN_PARALLEL = false;
     private final Map<Integer, Broker> partitionCache;
     private final List<String> seedBrokers;
     private final KafkaConsumerFactory kafkaConsumerFactory;
@@ -84,38 +80,13 @@ public class Consumer {
         return offsetMap;
     }
 
-    private ByteBufferMessageSet getBatch(String topic, int partition, Broker leader, Long offset) {
-        String clientName = "Client_" + topic + "_" + partition;
-        SimpleConsumer consumer = this.kafkaConsumerFactory.simpleConsumer(
-                leader.host(), leader.port(), 100000, 64 * 1024, clientName
-        );
+    private Iterable<MessageAndOffset> getBatch(String topic, int partition, Broker leader, Long offset) {
+        MessageConsumer messageConsumer = this.kafkaConsumerFactory.messageConsumer(leader);
         if (null == offset) {
             FetchConsumer fetchConsumer = this.kafkaConsumerFactory.fetchConsumer();
             offset = fetchConsumer.getOffset(topic, leader, partition);
         }
-
-        FetchRequest req = new FetchRequestBuilder()
-                .clientId(clientName)
-                // Note: this fetchSize of 100000 might need to be increased if large batches are written to Kafka
-                .addFetch(topic, partition, offset, 100000)
-                .build();
-        FetchResponse fetchResponse = consumer.fetch(req);
-        consumer.close();
-
-        if (fetchResponse.hasError()) {
-            // Something went wrong!
-            short code = fetchResponse.errorCode(topic, partition);
-            System.err.println("Error fetching data from the Broker:" + leader.host() + " Reason: " + code);
-            if (code == ErrorMapping.OffsetOutOfRangeCode()) {
-                // We asked for an invalid offset. For simple case ask for the last element to reset
-                throw new OffsetException("Offset out of range, Cannot safely continue");
-                //continue; // Retry this batch
-            }
-            // Throw away consumer
-            consumer.close();
-            throw new RuntimeException("Fatal error");
-        }
-        return fetchResponse.messageSet(topic, partition);
+        return messageConsumer.fetch(topic, partition, offset);
     }
 
 
@@ -129,22 +100,17 @@ public class Consumer {
      * @return List of Messages from all partitions
      */
     public List<Message> getBatchFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
-        List<Message> list = new ArrayList<>();
-
-        // Loop through the provided partition map
-        // @TODO: Convert to stream for ability to add parallelism.
-        for (Map.Entry<Integer, Long> bit : partitionOffsetMap.entrySet()) {
-            int partition = bit.getKey();
-            Long offset = bit.getValue();
+        Stream<Map.Entry<Integer, Long>> stream = partitionOffsetMap.entrySet().stream();
+        if (EXECUTE_MAPS_IN_PARALLEL) {
+            stream = stream.parallel();
+        }
+        return stream.flatMap(entry -> {
+            int partition = entry.getKey();
+            Long offset = entry.getValue();
 
             Broker leader = getLeaderForPartition(partition);
-            ByteBufferMessageSet messageSet = getBatch(topic, partition, leader, offset);
-
-            for (MessageAndOffset messageAndOffset : messageSet) {
-                long currentOffset = messageAndOffset.offset();
-                assert currentOffset <= offset;
-
-                offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
+            Iterable<MessageAndOffset> messageSet = getBatch(topic, partition, leader, offset);
+            return StreamSupport.stream(messageSet.spliterator(), EXECUTE_MAPS_IN_PARALLEL).map(messageAndOffset -> {
                 ByteBuffer payload = messageAndOffset.message().payload();
 
                 byte[] bytes = new byte[payload.limit()];
@@ -152,12 +118,12 @@ public class Consumer {
 
                 Message message = new Message();
                 message.body = bytes;
+                // @TODO: Can this be refactored so we don't have a nested map() calls?
                 message.partition = partition;
-                message.offset = offset;
-                list.add(message);
-            }
-        }
-        return list;
+                message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
+                return message;
+            });
+        }).collect(Collectors.toList());
     }
 
     private Broker getLeaderForPartition(Integer partition) {

@@ -3,6 +3,7 @@ package groovy.com.zanox.kafka.durable
 import com.zanox.kafka.durable.Consumer
 import com.zanox.kafka.durable.infrastructure.FetchConsumer
 import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory
+import com.zanox.kafka.durable.infrastructure.MessageConsumer
 import com.zanox.kafka.durable.infrastructure.TopicConsumer
 import com.zanox.kafka.durable.infrastructure.PartitionLeader
 import kafka.cluster.Broker
@@ -91,6 +92,7 @@ class ConsumerTest extends Specification {
     def "It can get a batch of messages"() {
         setup:
         List<String> list = Collections.singletonList("BrokerSeedURL");
+        def leader = Mock(Broker)
         def consumerFactory = Mock(KafkaConsumerFactory)
         def consumer = new Consumer(consumerFactory, "topic", list);
         Map<Integer, Long> offsetMap = new HashMap<>();
@@ -106,42 +108,26 @@ class ConsumerTest extends Specification {
             assert partition == 1
             assert offset == 43L
         }
+        1 * consumerFactory.messageConsumer(leader) >> {
+            def messageConsumer = Mock(MessageConsumer)
+            1 * messageConsumer.fetch("topic", 1, 42) >> {
+                List<MessageAndOffset> messages = new ArrayList<>()
+                messages << {
+                    def message = Mock(Message)
+                    1 * message.payload() >> ByteBuffer.wrap("body".bytes)
+                    return new MessageAndOffset(message, 42L)
+                }()
+                return messages
+            }
+            return messageConsumer
+        }
         1 * consumerFactory.topicConsumer("topic", list) >> {
             def topicConsumer = Mock(TopicConsumer)
             def partitionLeader = Mock(PartitionLeader)
             1 * partitionLeader.getPartitionId() >> 1
-            1 * partitionLeader.getLeader() >> {
-                def leader = Mock(Broker)
-                1 * leader.host() >> "foo"
-                1 * leader.port() >> 1337
-                return leader
-            }
+            1 * partitionLeader.getLeader() >> leader
             1 * topicConsumer.getPartitions() >> Collections.singletonList(partitionLeader)
             return topicConsumer
-        }
-        1 * consumerFactory.simpleConsumer("foo", 1337, _, _, _) >> {
-            def simpleConsumer = Mock(SimpleConsumer)
-            1 * simpleConsumer.close()
-            1 * simpleConsumer.fetch(_) >> {
-                def fetchResponse = Mock(FetchResponse)
-                1 * fetchResponse.hasError() >> false
-                1 * fetchResponse.messageSet("topic", 1) >> {
-                    def messageSet = Mock(ByteBufferMessageSet)
-                    1 * messageSet.iterator() >> {
-                        def iterator = Mock(Iterator)
-                        2 * iterator.hasNext() >>> [true, false]
-                        1 * iterator.next() >> {
-                            def message = Mock(Message)
-                            1 * message.payload() >> ByteBuffer.wrap("body".bytes)
-                            return new MessageAndOffset(message, 42L)
-                        }
-                        return iterator
-                    }
-                    return messageSet
-                }
-                return fetchResponse
-            }
-            return simpleConsumer
         }
         0 * _
     }

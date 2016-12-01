@@ -1,5 +1,6 @@
 package com.zanox.kafka.durable.infrastructure;
 
+import kafka.cluster.Broker;
 import kafka.javaapi.consumer.SimpleConsumer;
 
 import java.util.List;
@@ -16,5 +17,9 @@ public class KafkaConsumerFactory {
 
     public FetchConsumer fetchConsumer() {
         return new FetchConsumer(this);
+    }
+
+    public MessageConsumer messageConsumer(Broker leader) {
+        return new MessageConsumer(this, leader);
     }
 }
