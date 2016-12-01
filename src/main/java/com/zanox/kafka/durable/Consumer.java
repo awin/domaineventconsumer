@@ -85,6 +85,7 @@ public class Consumer {
         });
         return offsetMap;
     }
+
     private ByteBufferMessageSet getBatch(String topic, int partition, Broker leader, Long offset) {
         String clientName = "Client_" + topic + "_" + partition;
         SimpleConsumer consumer = this.kafkaConsumerFactory.simpleConsumer(
@@ -129,7 +130,6 @@ public class Consumer {
      * @return List of Messages from all partitions
      */
     public List<Message> getBatchFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
-        getLeaders();
         List<Message> list = new ArrayList<>();
 
         // Loop through the provided partition map
@@ -168,8 +168,22 @@ public class Consumer {
     private Broker getLeaderForPartition(Integer partition) {
         // If Partition is not in the cache,
         if (!partitionCache.containsKey(partition)) {
-            // @TODO: Look it up
-            throw new PartitionException("Specified partition doesn't exist in cache");
+            TopicConsumer topicConsumer = this.kafkaConsumerFactory.topicConsumer(this.topic, this.seedBrokers);
+            List<PartitionLeader> partitions = topicConsumer.getPartitions();
+            // Re-populate the cache
+            partitionCache.putAll(
+                    partitions.stream()
+                            .collect(Collectors.toMap(
+                                    PartitionLeader::getPartitionId,
+                                    PartitionLeader::getLeader
+                            ))
+            );
+            // Partition cache shouldn't contain more partitions than we get from Kafka
+            // You can't remove partitions in Kafka!
+            assert partitionCache.size() == partitions.size();
+            if (! partitionCache.containsKey(partition)) {
+                throw new PartitionException("Specified partition doesn't exist");
+            }
         }
         Broker leader = partitionCache.get(partition);
         return leader;
