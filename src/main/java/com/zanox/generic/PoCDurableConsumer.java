@@ -29,17 +29,9 @@ public class PoCDurableConsumer {
         offsetMap = example.getLatestOffsets();
         System.err.println("This are the latest offsets: " + offsetMap);
 
-        while (true) {
-            List<Message> batch = example.getBatchFromPartitionOffset(offsetMap);
-            for (Message message : batch) {
-                //System.out.print(".");
-                // Record the new offset
-                // This has to be done on every message, because every message could have different partition!
-                offsetMap.put(message.partition, message.offset);
-                System.out.println(new String(message.body));
-            }
-            // Persist offsetMap.
-            System.err.println(offsetMap);
-        }
+        example.getStreamFromPartitionOffset(offsetMap).forEach(message -> {
+            System.out.println(new String(message.body));
+            System.out.format("Persist offsets: %s:%s %n", message.partition, message.offset);
+        });
     }
 }

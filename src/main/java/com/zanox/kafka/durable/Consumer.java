@@ -12,6 +12,8 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -100,31 +102,60 @@ public class Consumer {
      * @return List of Messages from all partitions
      */
     public List<Message> getBatchFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
+        return getStreamFromPartitionOffset(partitionOffsetMap, true)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get batches of messages as an Infinite stream
+     * Note that Offset handling is slightly different here, You are no longer required to keep the offsets yourself
+     * simply supply the correct offset on stream start.
+     * @TODO: Implement closing streams
+     * @param partitionOffsetMap Partitions and their offsets
+     * @return Stream of messages
+     */
+    public Stream<Message> getStreamFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
+        return getStreamFromPartitionOffset(partitionOffsetMap, false);
+    }
+
+    private Stream<Message> getStreamFromPartitionOffset(Map<Integer, Long> partitionOffsetMap, boolean limit) {
         Stream<Map.Entry<Integer, Long>> stream = partitionOffsetMap.entrySet().stream();
         if (EXECUTE_MAPS_IN_PARALLEL) {
             stream = stream.parallel();
         }
-        // @TODO: You probably want to process partitions separately to maintain order
+
         return stream.flatMap(entry -> {
             int partition = entry.getKey();
-            Long offset = entry.getValue();
 
             Broker leader = getLeaderForPartition(partition);
-            Iterable<MessageAndOffset> messageSet = getBatch(topic, partition, leader, offset);
-            return StreamSupport.stream(messageSet.spliterator(), EXECUTE_MAPS_IN_PARALLEL).map(messageAndOffset -> {
-                ByteBuffer payload = messageAndOffset.message().payload();
+            final AtomicLong offset = new AtomicLong(entry.getValue());
+            return Stream.generate(() -> {
+                // Infinite stream
+                Iterable<MessageAndOffset> messageSet = getBatch(topic, partition, leader, offset.get());
 
-                byte[] bytes = new byte[payload.limit()];
-                payload.get(bytes);
+                // Finite stream
+                Stream<Message> finiteStream = StreamSupport.stream(messageSet.spliterator(), false).map(messageAndOffset -> {
+                    offset.getAndSet(messageAndOffset.nextOffset());
 
-                Message message = new Message();
-                message.body = bytes;
-                // @TODO: Can this be refactored so we don't have a nested map() calls? also partition variable
-                message.partition = partition;
-                message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
-                return message;
-            });
-        }).collect(Collectors.toList());
+                    ByteBuffer payload = messageAndOffset.message().payload();
+
+                    byte[] bytes = new byte[payload.limit()];
+                    payload.get(bytes);
+
+                    Message message = new Message();
+                    message.body = bytes;
+                    // @TODO: Can this be refactored so we don't have a nested map() calls? also partition variable
+                    message.partition = partition;
+                    message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
+                    return message;
+                });
+                if (limit) {
+                    // @TODO: I really don't want to walk through the collection again
+                    finiteStream.limit(10000);
+                }
+                return finiteStream;
+            }).flatMap(Function.identity());
+        });
     }
 
     private Broker getLeaderForPartition(Integer partition) {

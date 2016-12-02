@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class ParallelStream {
     /**
@@ -32,6 +33,16 @@ public class ParallelStream {
                 delay, partitions, delay * partitions
         );
         return list;
+    }
+
+    public Stream<TestMessage> testInfiniteStreams(int partitions, long delay) {
+        return IntStream.range(0, partitions).parallel().boxed().flatMap(partition -> {
+            sleep(delay);
+            return Stream.iterate(1, y -> y + 1).map(y -> {
+                //System.out.format("Creating a new messagge(%s, %s); %n", partition, y);
+                return new TestMessage(partition, y);
+            });
+        });
     }
 
     public Map<Integer, List<TestMessage>> getPartitionMap(ConcurrentLinkedQueue<TestMessage> list) {
