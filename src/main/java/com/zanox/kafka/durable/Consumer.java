@@ -95,7 +95,7 @@ public class Consumer {
      * This is the main operational method of this library, this is how you get your messages
      * Offsets are intrinsically attached to their partitions so they always have to be passed together.
      * Its valid to specify less partitions than are actually available, but other way around throws an exception.
-     * @TODO: Refactor
+     * @TODO: Provide another function to give you infinite parallel stream instead
      * @param partitionOffsetMap Partitions and their offets to look at
      * @return List of Messages from all partitions
      */
@@ -104,6 +104,7 @@ public class Consumer {
         if (EXECUTE_MAPS_IN_PARALLEL) {
             stream = stream.parallel();
         }
+        // @TODO: You probably want to process partitions separately to maintain order
         return stream.flatMap(entry -> {
             int partition = entry.getKey();
             Long offset = entry.getValue();
@@ -118,7 +119,7 @@ public class Consumer {
 
                 Message message = new Message();
                 message.body = bytes;
-                // @TODO: Can this be refactored so we don't have a nested map() calls?
+                // @TODO: Can this be refactored so we don't have a nested map() calls? also partition variable
                 message.partition = partition;
                 message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
                 return message;
