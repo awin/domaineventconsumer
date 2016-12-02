@@ -29,10 +29,6 @@ public class TopicConsumer {
     private final String topic;
     private final List<String> brokers;
 
-    public TopicConsumer(String topic, List<String> brokers) {
-        this(new KafkaConsumerFactory(), topic, brokers);
-    }
-
     public TopicConsumer(KafkaConsumerFactory kafkaConsumerFactory, String topic, List<String> brokers) {
         this.kafkaConsumerFactory = kafkaConsumerFactory;
         this.topic = topic;

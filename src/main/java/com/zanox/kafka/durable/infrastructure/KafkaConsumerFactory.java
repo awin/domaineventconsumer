@@ -12,7 +12,7 @@ public class KafkaConsumerFactory {
 
     public TopicConsumer topicConsumer(String topic, List<String> brokers) {
         // Consumer containing all leaders and topics
-        return new TopicConsumer(topic, brokers);
+        return new TopicConsumer(this, topic, brokers);
     }
 
     public FetchConsumer fetchConsumer() {
