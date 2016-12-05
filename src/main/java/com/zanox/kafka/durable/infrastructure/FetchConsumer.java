@@ -1,7 +1,6 @@
 package com.zanox.kafka.durable.infrastructure;
 
 import com.zanox.kafka.durable.OffsetException;
-import kafka.api.OffsetRequest;
 import kafka.api.PartitionOffsetRequestInfo;
 import kafka.cluster.Broker;
 import kafka.common.TopicAndPartition;
@@ -16,17 +15,26 @@ import java.util.Map;
  *
  */
 public class FetchConsumer {
+    /**
+     * Kafka magic numbers:
+     * val kafka.api.OffsetRequest.EarliestTime: Long = -1
+     * val kafka.api.OffsetRequest.LatestTime: Long = -2
+     * Yes, they are wrong way around
+     */
+    public static final long EARLIEST = -2;
+    public static final long LATEST = -1;
+
     private KafkaConsumerFactory kafkaConsumerFactory;
 
     public FetchConsumer(KafkaConsumerFactory kafkaConsumerFactory) {
         this.kafkaConsumerFactory = kafkaConsumerFactory;
     }
 
-    public long getOffset(String topic, Broker leader, int partition) {
+    public long getOffset(String topic, Broker leader, int partition, long time) {
         SimpleConsumer consumer = this.kafkaConsumerFactory.simpleConsumer(
             leader.host(), leader.port(), 100000, 64 * 1024, "offsetLookup"
         );
-        long offset = getOffset(consumer, topic, partition, OffsetRequest.LatestTime(), "offsetLookup");
+        long offset = getOffset(consumer, topic, partition, time, "offsetLookup");
         return offset;
     }
 

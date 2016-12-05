@@ -7,11 +7,9 @@ import com.zanox.kafka.durable.infrastructure.MessageConsumer
 import com.zanox.kafka.durable.infrastructure.TopicConsumer
 import com.zanox.kafka.durable.infrastructure.PartitionLeader
 import kafka.cluster.Broker
-import kafka.javaapi.FetchResponse
-import kafka.javaapi.consumer.SimpleConsumer
-import kafka.javaapi.message.ByteBufferMessageSet
 import kafka.message.Message
 import kafka.message.MessageAndOffset
+import spock.lang.Ignore
 import spock.lang.Specification
 
 import java.nio.ByteBuffer
@@ -82,8 +80,8 @@ class ConsumerTest extends Specification {
         }
         1 * consumerFactory.fetchConsumer() >> {
             def fetchConsumer = Mock(FetchConsumer)
-            1 * fetchConsumer.getOffset("topic", leader, 0) >> 2L
-            1 * fetchConsumer.getOffset("topic", leader, 1) >> 42L
+            1 * fetchConsumer.getOffset("topic", leader, 0, fetchConsumer.LATEST) >> 2L
+            1 * fetchConsumer.getOffset("topic", leader, 1, fetchConsumer.LATEST) >> 42L
             return fetchConsumer
         }
         0 * _

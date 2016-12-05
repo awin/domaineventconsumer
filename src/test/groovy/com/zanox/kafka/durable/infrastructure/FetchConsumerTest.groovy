@@ -16,7 +16,7 @@ class FetchConsumerTest extends Specification {
         def broker = Mock(Broker)
 
         when:
-        def offset = fetchConsumer.getOffset("topic", broker, 42)
+        def offset = fetchConsumer.getOffset("topic", broker, 42, fetchConsumer.LATEST)
 
 
         then:

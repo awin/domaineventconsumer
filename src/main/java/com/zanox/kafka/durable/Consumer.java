@@ -24,12 +24,14 @@ public class Consumer {
     private final List<String> seedBrokers;
     private final KafkaConsumerFactory kafkaConsumerFactory;
     private String topic;
+    private Map<Integer, Long> offsetCache = new HashMap<>();
 
     /**
      * Constructor with Injectable ConsumerFactory
+     *
      * @param kafkaConsumerFactory Kafka Consumer factory
-     * @param topic Topic to work on
-     * @param seedBrokers List of seed brokers
+     * @param topic                Topic to work on
+     * @param seedBrokers          List of seed brokers
      */
     public Consumer(KafkaConsumerFactory kafkaConsumerFactory, String topic, List<String> seedBrokers) {
         this.kafkaConsumerFactory = kafkaConsumerFactory;
@@ -42,7 +44,8 @@ public class Consumer {
      * Consumer constructor
      * Requires a list of seed brokers that will be used for bootstrapping
      * You don't have to specify the whole list as they will be auto-discovered
-     * @param topic Topic to work on
+     *
+     * @param topic       Topic to work on
      * @param seedBrokers List of seed brokers
      */
     public Consumer(String topic, List<String> seedBrokers) {
@@ -52,6 +55,7 @@ public class Consumer {
     /**
      * Return list of Partition IDs for the given topic
      * Metadata API
+     *
      * @return List of Partitions IDs
      */
     public List<Integer> getAvailablePartitions() {
@@ -64,9 +68,22 @@ public class Consumer {
     /**
      * Return a map of latest offsets
      * Fetch/Offet API
+     *
      * @return Map of latest offsets
      */
     public Map<Integer, Long> getLatestOffsets() {
+        return getOffsets(FetchConsumer.LATEST);
+    }
+
+    /**
+     * Return earliest offsets
+     * @return Map of earliest offsets
+     */
+    public Map<Integer, Long> getEarliestOffsets() {
+        return getOffsets(FetchConsumer.EARLIEST);
+    }
+
+    private Map<Integer, Long> getOffsets(long whichTime) {
         TopicConsumer topicConsumer = this.kafkaConsumerFactory.topicConsumer(this.topic, this.seedBrokers);
         FetchConsumer fetchConsumer = this.kafkaConsumerFactory.fetchConsumer();
 
@@ -75,7 +92,7 @@ public class Consumer {
             offsetMap.put(
                     partitionLeader.getPartitionId(),
                     fetchConsumer.getOffset(
-                            this.topic, partitionLeader.getLeader(), partitionLeader.getPartitionId()
+                            this.topic, partitionLeader.getLeader(), partitionLeader.getPartitionId(), whichTime
                     )
             );
         });
@@ -86,7 +103,7 @@ public class Consumer {
         MessageConsumer messageConsumer = this.kafkaConsumerFactory.messageConsumer(leader);
         if (null == offset) {
             FetchConsumer fetchConsumer = this.kafkaConsumerFactory.fetchConsumer();
-            offset = fetchConsumer.getOffset(topic, leader, partition);
+            offset = fetchConsumer.getOffset(topic, leader, partition, FetchConsumer.LATEST);
         }
         return messageConsumer.fetch(topic, partition, offset);
     }
@@ -151,11 +168,22 @@ public class Consumer {
                 });
                 if (limit) {
                     // @TODO: I really don't want to walk through the collection again
-                    finiteStream.limit(10000);
+                    finiteStream.limit(10);
                 }
                 return finiteStream;
             }).flatMap(Function.identity());
         });
+    }
+
+    private long getOffsetIfNull(int partition, Long offset) {
+        if (null != offset) {
+            return offset;
+        }
+
+        if (! offsetCache.containsKey(partition)) {
+            offsetCache = getLatestOffsets();
+        }
+        return offsetCache.get(partition);
     }
 
     private Broker getLeaderForPartition(Integer partition) {
