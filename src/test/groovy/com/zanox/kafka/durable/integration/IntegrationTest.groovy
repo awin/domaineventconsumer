@@ -4,7 +4,7 @@ import com.zanox.kafka.durable.Consumer
 import com.zanox.kafka.durable.Message
 import com.zanox.kafka.durable.test.EmbeddedKafka
 import com.zanox.kafka.durable.test.EmbeddedKafkaProducer
-import org.junit.Ignore
+import spock.lang.Ignore
 import spock.lang.Specification
 
 import java.util.stream.Collectors
