@@ -37,19 +37,25 @@ public class ParallelStream {
         return list;
     }
 
-    public Stream<TestMessage> testInfiniteStreams(int partitions, long delay) {
+    public Stream<Stream<TestMessage>> testInfiniteStreams(int partitions, long delay) {
         // Partition stream
-        return IntStream.range(0, partitions).parallel().boxed().flatMap(partition -> {
+        return IntStream.range(0, partitions).unordered().parallel().boxed().map(partition -> {
             sleep(delay);
             AtomicInteger offset = new AtomicInteger(0);
             // Infinite Stream - Kafka partition
             return Stream.generate(() -> {
-                System.out.println(".");
+                System.out.print(".");
                 // Generate 10 messages
                 return IntStream.range(0, 10).boxed().map(y -> {
                     return new TestMessage(partition, offset.incrementAndGet());
+                }).onClose(() -> {
+                    System.out.println("Finite Kafka batch stream is closed");
                 });
-            }).flatMap(Function.identity());
+            }).flatMap(Function.identity()).onClose(() -> {
+                    System.out.println("Infinite stream after flat map is closed");
+            });
+        }).onClose(() -> {
+            System.out.println("Outer stream is closed");
         });
     }
 
