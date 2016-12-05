@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class PoCDurableConsumer {
     public static void main(String args[]) {
@@ -16,22 +17,18 @@ public class PoCDurableConsumer {
 
         Consumer example = new Consumer(topic, seeds);
 
-        // All available partitions
-        // We can use this to look up which partitions are we responsible for.
-        List<Integer> partitions = example.getAvailablePartitions();
-        Map<Integer, Long> offsetMap = new HashMap<>();
-        for (Integer partition : partitions) {
-            offsetMap.put(partition, null); // BEGINNING specified as `null`
-        }
+        // All available partitions and offsets
+        Map<Integer, Long> offsetMap = example.getEarliestOffsets();
         System.err.println("We start with this offset map: " + offsetMap);
 
         // If you want to start from latest offsets do:
-        offsetMap = example.getLatestOffsets();
-        System.err.println("This are the latest offsets: " + offsetMap);
+        //offsetMap = example.getLatestOffsets();
+        System.err.println("This are the latest offsets: " + example.getLatestOffsets());
 
-        example.getStreamFromPartitionOffset(offsetMap).forEach(message -> {
-            System.out.println(new String(message.body));
-            System.out.format("Persist offsets: %s:%s %n", message.partition, message.offset);
+        Stream<Message> stream = example.getStreamFromPartitionOffset(offsetMap);
+        stream.forEach(message -> {
+            //System.out.println(new String(message.body));
+            System.out.format("Partition: %s Offset: %s Thread: %s %n", message.partition, message.offset, Thread.currentThread().getId());
         });
     }
 }
