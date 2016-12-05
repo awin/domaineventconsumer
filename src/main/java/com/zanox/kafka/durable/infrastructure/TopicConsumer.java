@@ -1,5 +1,6 @@
 package com.zanox.kafka.durable.infrastructure;
 
+import com.google.common.net.HostAndPort;
 import kafka.javaapi.PartitionMetadata;
 import kafka.javaapi.TopicMetadata;
 import kafka.javaapi.TopicMetadataRequest;
@@ -46,8 +47,9 @@ public class TopicConsumer {
         for (String broker : brokers) {
             List<TopicMetadata> metaData = new ArrayList<>();
             try {
+                HostAndPort hostAndPort = HostAndPort.fromString(broker);
                 SimpleConsumer consumer = this.kafkaConsumerFactory.simpleConsumer(
-                        broker, 9092, 100000, 64 * 1024, "leaderLookup"
+                        hostAndPort.getHostText(), hostAndPort.getPortOrDefault(9092), 100000, 64 * 1024, "leaderLookup"
                 );
                 TopicMetadataResponse resp = consumer.send(req);
                 consumer.close();
