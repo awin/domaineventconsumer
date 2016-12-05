@@ -36,10 +36,9 @@ class ParallelStreamTest extends Specification {
             assert testMessage.message == count + 1
             map.put(testMessage.partition, count + 1)
 
-            if (count % 100000 == 0) {
-                System.err.format("Partition: %s, Message: %s from Thread: %s %n", testMessage.partition, testMessage.message, Thread.currentThread().getId());
-                System.err.println(map);
-            }
+            System.err.format("Partition: %s, Message: %s from Thread: %s %n", testMessage.partition, testMessage.message, Thread.currentThread().getId());
+            System.err.println(map);
+            Thread.sleep(100);
         })
 
         then:

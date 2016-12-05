@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -19,7 +20,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class Consumer {
-    private static final boolean EXECUTE_MAPS_IN_PARALLEL = false;
     private final Map<Integer, Broker> partitionCache;
     private final List<String> seedBrokers;
     private final KafkaConsumerFactory kafkaConsumerFactory;
@@ -119,8 +119,26 @@ public class Consumer {
      * @return List of Messages from all partitions
      */
     public List<Message> getBatchFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
-        return getStreamFromPartitionOffset(partitionOffsetMap, true)
-                .collect(Collectors.toList());
+        return partitionOffsetMap.entrySet().stream().flatMap(entry -> {
+            int partition = entry.getKey();
+            Long offset = entry.getValue();
+
+            Broker leader = getLeaderForPartition(partition);
+            Iterable<MessageAndOffset> messageSet = getBatch(topic, partition, leader, offset);
+            return StreamSupport.stream(messageSet.spliterator(), false).map(messageAndOffset -> {
+                ByteBuffer payload = messageAndOffset.message().payload();
+
+                byte[] bytes = new byte[payload.limit()];
+                payload.get(bytes);
+
+                Message message = new Message();
+                message.body = bytes;
+                // @TODO: Can this be refactored so we don't have a nested map() calls?
+                message.partition = partition;
+                message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
+                return message;
+            });
+        }).collect(Collectors.toList());
     }
 
     /**
@@ -132,26 +150,19 @@ public class Consumer {
      * @return Stream of messages
      */
     public Stream<Message> getStreamFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
-        return getStreamFromPartitionOffset(partitionOffsetMap, false);
-    }
-
-    private Stream<Message> getStreamFromPartitionOffset(Map<Integer, Long> partitionOffsetMap, boolean limit) {
-        Stream<Map.Entry<Integer, Long>> stream = partitionOffsetMap.entrySet().stream();
-        if (EXECUTE_MAPS_IN_PARALLEL) {
-            stream = stream.parallel();
-        }
-
+        Stream<Map.Entry<Integer, Long>> stream = partitionOffsetMap.entrySet().stream().parallel();
         return stream.flatMap(entry -> {
             int partition = entry.getKey();
 
             Broker leader = getLeaderForPartition(partition);
-            final AtomicLong offset = new AtomicLong(entry.getValue());
+            MessageConsumer messageConsumer = this.kafkaConsumerFactory.messageConsumer(leader);
+            // It doesn't really need to be atomic, as its only accessed in this thread
+            final AtomicLong offset = new AtomicLong(getOffsetIfNull(partition, entry.getValue()));
+            // Infinite stream
             return Stream.generate(() -> {
-                // Infinite stream
-                Iterable<MessageAndOffset> messageSet = getBatch(topic, partition, leader, offset.get());
-
+                Iterable<MessageAndOffset> messageSet = messageConsumer.fetch(topic, partition, offset.get());
                 // Finite stream
-                Stream<Message> finiteStream = StreamSupport.stream(messageSet.spliterator(), false).map(messageAndOffset -> {
+                return StreamSupport.stream(messageSet.spliterator(), false).map(messageAndOffset -> {
                     offset.getAndSet(messageAndOffset.nextOffset());
 
                     ByteBuffer payload = messageAndOffset.message().payload();
@@ -166,11 +177,6 @@ public class Consumer {
                     message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
                     return message;
                 });
-                if (limit) {
-                    // @TODO: I really don't want to walk through the collection again
-                    finiteStream.limit(10);
-                }
-                return finiteStream;
             }).flatMap(Function.identity());
         });
     }

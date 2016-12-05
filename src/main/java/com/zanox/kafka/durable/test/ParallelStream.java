@@ -3,6 +3,8 @@ package com.zanox.kafka.durable.test;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -36,12 +38,18 @@ public class ParallelStream {
     }
 
     public Stream<TestMessage> testInfiniteStreams(int partitions, long delay) {
+        // Partition stream
         return IntStream.range(0, partitions).parallel().boxed().flatMap(partition -> {
             sleep(delay);
-            return Stream.iterate(1, y -> y + 1).map(y -> {
-                //System.out.format("Creating a new messagge(%s, %s); %n", partition, y);
-                return new TestMessage(partition, y);
-            });
+            AtomicInteger offset = new AtomicInteger(0);
+            // Infinite Stream - Kafka partition
+            return Stream.generate(() -> {
+                System.out.println(".");
+                // Generate 10 messages
+                return IntStream.range(0, 10).boxed().map(y -> {
+                    return new TestMessage(partition, offset.incrementAndGet());
+                });
+            }).flatMap(Function.identity());
         });
     }
 
