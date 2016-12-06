@@ -99,19 +99,22 @@ public class Consumer {
     }
 
     /**
-     * Return batch of messages for these partitions and offsets
+     * Return a List of messages for these partitions and offsets
      * Offsets are intrinsically attached to their partitions so they always have to be passed together.
      * Its valid to specify less partitions than are actually available, but other way around throws an exception.
+     * Note: Execution is single-threaded and serial
      *
-     * @param partitionOffsetMap Partitions and their offsets to look at
+     * @param partitionOffsetMap Partitions and their offsets to consume
      * @return List of Messages from all selected partitions
      */
+    @Deprecated
     public List<Message> getBatchFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
         return getStreamFromPartitionOffset(partitionOffsetMap).collect(Collectors.toList());
     }
 
     /**
      * Get batches of messages as Finite streams
+     * Note: Execution is single-threaded and serial
      *
      * @TODO: Implement closing streams
      * @param partitionOffsetMap Partitions and their offsets
@@ -147,14 +150,7 @@ public class Consumer {
         return () -> getFiniteStreamForPartitionAndOffset(messageConsumer, partition, offset);
     }
 
-    /**
-     * Finite stream of messages
-     * @param messageConsumer Consumer instance
-     * @param partition Partition
-     * @param offset Offset
-     * @return Finite Stream of messages
-     */
-    public Stream<Message> getFiniteStreamForPartitionAndOffset(MessageConsumer messageConsumer, int partition, AtomicLong offset) {
+    private Stream<Message> getFiniteStreamForPartitionAndOffset(MessageConsumer messageConsumer, int partition, AtomicLong offset) {
         Iterable<MessageAndOffset> messageSet = messageConsumer.fetch(topic, partition, offset.get());
         // Finite stream
         return StreamSupport.stream(messageSet.spliterator(), false).map(messageAndOffset -> {

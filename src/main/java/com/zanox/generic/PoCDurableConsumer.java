@@ -39,12 +39,12 @@ public class PoCDurableConsumer {
             consumer.getBatchSupplierForPartitionAndOffset(entry.getKey(), entry.getValue())
         ).collect(Collectors.toList());
 
-        // Create a parallel stream from suppliers - Ensures we process partitions
-        supplierList.parallelStream().forEach(supplier -> {
+        // Create a parallel stream from suppliers: ensures we process all partitions equally
+        supplierList.parallelStream().forEach(batchSupplier -> {
             // Create an infinite stream from each supplier
-            Stream.generate(() -> supplier).forEach(batchSupplier -> {
+            Stream.generate(batchSupplier).forEach(batchStream -> {
                 // Process each batch separately
-                batchSupplier.get().forEach(message -> {
+                batchStream.forEach(message -> {
                     countMap.get(message.partition).incrementAndGet();
                     System.out.format(
                             "Partition: %s Offset: %s Thread: %s %s %n",
