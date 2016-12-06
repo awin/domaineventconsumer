@@ -122,16 +122,9 @@ public class Consumer {
      */
     public Stream<Message> getStreamFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
         Stream<Map.Entry<Integer, Long>> stream = partitionOffsetMap.entrySet().stream();
-        return stream.flatMap(entry -> {
-            int partition = entry.getKey();
-
-            Broker leader = getLeaderForPartition(partition);
-            MessageConsumer messageConsumer = this.kafkaConsumerFactory.messageConsumer(leader);
-            // It doesn't really need to be atomic, as its only accessed in this thread
-            final AtomicLong offset = new AtomicLong(getOffsetIfNull(partition, entry.getValue()));
-
-            return getFiniteStreamForPartitionAndOffset(messageConsumer, partition, offset);
-        });
+        return stream.flatMap(entry ->
+            getBatchSupplierForPartitionAndOffset(entry.getKey(), entry.getValue()).get()
+        );
     }
 
     /**
@@ -163,7 +156,6 @@ public class Consumer {
 
             Message message = new Message();
             message.body = bytes;
-            // @TODO: Can this be refactored so we don't have a nested map() calls? also partition variable
             message.partition = partition;
             message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
             return message;
