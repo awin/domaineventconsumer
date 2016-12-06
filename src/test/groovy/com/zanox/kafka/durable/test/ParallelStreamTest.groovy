@@ -20,7 +20,7 @@ class ParallelStreamTest extends Specification {
         0 * _
     }
 
-    //@Ignore
+    @Ignore
     def "Parallel test with Infinite streams"() {
         setup:
         def parallel = new ParallelStream();

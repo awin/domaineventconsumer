@@ -9,6 +9,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+/**
+ * This class is here for testing assumptions about how Parallel Streams in Java8 work. This isn't a class you should
+ * be including in any way
+ */
 public class ParallelStream {
     /**
      * A test of Parallel processing framework
@@ -37,6 +41,13 @@ public class ParallelStream {
         return list;
     }
 
+    /**
+     * Test of infinite streams. This actually doesn't work, as it results in an infinite loop when trying to limit the
+     * stream size or close it. The test for this method is disabled
+     * @param partitions Number of partitions to simulate
+     * @param delay Delay for each batch
+     * @return Stream of Streams of TestMessages
+     */
     public Stream<Stream<TestMessage>> testInfiniteStreams(int partitions, long delay) {
         // Partition stream
         return IntStream.range(0, partitions).unordered().parallel().boxed().map(partition -> {
@@ -46,19 +57,18 @@ public class ParallelStream {
             return Stream.generate(() -> {
                 System.out.print(".");
                 // Generate 10 messages
-                return IntStream.range(0, 10).boxed().map(y -> {
-                    return new TestMessage(partition, offset.incrementAndGet());
-                }).onClose(() -> {
-                    System.out.println("Finite Kafka batch stream is closed");
-                });
-            }).flatMap(Function.identity()).onClose(() -> {
-                    System.out.println("Infinite stream after flat map is closed");
-            });
-        }).onClose(() -> {
-            System.out.println("Outer stream is closed");
+                return IntStream.range(0, 10).boxed().map(y ->
+                        new TestMessage(partition, offset.incrementAndGet())
+                );
+            }).flatMap(Function.identity());
         });
     }
 
+    /**
+     * Helper method to get a map of partitions
+     * @param list queue
+     * @return map of partitions
+     */
     public Map<Integer, List<TestMessage>> getPartitionMap(ConcurrentLinkedQueue<TestMessage> list) {
         Map<Integer, List<TestMessage>> a = list.stream().collect(Collectors.groupingBy(TestMessage::getPartition));
         return a;

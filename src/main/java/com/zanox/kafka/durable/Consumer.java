@@ -12,9 +12,8 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -111,46 +110,25 @@ public class Consumer {
 
     /**
      * Return batch of messages for these partitions and offsets
-     * This is the main operational method of this library, this is how you get your messages
      * Offsets are intrinsically attached to their partitions so they always have to be passed together.
      * Its valid to specify less partitions than are actually available, but other way around throws an exception.
-     * @TODO: Provide another function to give you infinite parallel stream instead
-     * @param partitionOffsetMap Partitions and their offets to look at
-     * @return List of Messages from all partitions
+     *
+     * @param partitionOffsetMap Partitions and their offsets to look at
+     * @return List of Messages from all selected partitions
      */
     public List<Message> getBatchFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
-        return partitionOffsetMap.entrySet().stream().flatMap(entry -> {
-            int partition = entry.getKey();
-            Long offset = entry.getValue();
-
-            Broker leader = getLeaderForPartition(partition);
-            Iterable<MessageAndOffset> messageSet = getBatch(topic, partition, leader, offset);
-            return StreamSupport.stream(messageSet.spliterator(), false).map(messageAndOffset -> {
-                ByteBuffer payload = messageAndOffset.message().payload();
-
-                byte[] bytes = new byte[payload.limit()];
-                payload.get(bytes);
-
-                Message message = new Message();
-                message.body = bytes;
-                // @TODO: Can this be refactored so we don't have a nested map() calls?
-                message.partition = partition;
-                message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
-                return message;
-            });
-        }).collect(Collectors.toList());
+        return getStreamFromPartitionOffset(partitionOffsetMap).collect(Collectors.toList());
     }
 
     /**
-     * Get batches of messages as an Infinite stream
-     * Note that Offset handling is slightly different here, You are no longer required to keep the offsets yourself
-     * simply supply the correct offset on stream start.
+     * Get batches of messages as Finite streams
+     *
      * @TODO: Implement closing streams
      * @param partitionOffsetMap Partitions and their offsets
-     * @return Stream of messages
+     * @return Stream of Streams (of messages)
      */
     public Stream<Message> getStreamFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
-        Stream<Map.Entry<Integer, Long>> stream = partitionOffsetMap.entrySet().stream().parallel();
+        Stream<Map.Entry<Integer, Long>> stream = partitionOffsetMap.entrySet().stream();
         return stream.flatMap(entry -> {
             int partition = entry.getKey();
 
@@ -158,28 +136,54 @@ public class Consumer {
             MessageConsumer messageConsumer = this.kafkaConsumerFactory.messageConsumer(leader);
             // It doesn't really need to be atomic, as its only accessed in this thread
             final AtomicLong offset = new AtomicLong(getOffsetIfNull(partition, entry.getValue()));
-            // Infinite stream
-            return Stream.generate(() -> {
-                Iterable<MessageAndOffset> messageSet = messageConsumer.fetch(topic, partition, offset.get());
-                // Finite stream
-                return StreamSupport.stream(messageSet.spliterator(), false).map(messageAndOffset -> {
-                    offset.getAndSet(messageAndOffset.nextOffset());
 
-                    ByteBuffer payload = messageAndOffset.message().payload();
-
-                    byte[] bytes = new byte[payload.limit()];
-                    payload.get(bytes);
-
-                    Message message = new Message();
-                    message.body = bytes;
-                    // @TODO: Can this be refactored so we don't have a nested map() calls? also partition variable
-                    message.partition = partition;
-                    message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
-                    return message;
-                });
-            }).flatMap(Function.identity());
+            return getFiniteStreamForPartitionAndOffset(messageConsumer, partition, offset);
         });
     }
+
+    /**
+     * Get Infinite stream of messages per partition
+     * @param partition Partition ID
+     * @param offsetLong Offset to start from
+     * @return Infinite Stream of messages
+     */
+    public Supplier<Stream<Message>> getBatchSupplierForPartitionAndOffset(int partition, Long offsetLong) {
+        Broker leader = getLeaderForPartition(partition);
+        MessageConsumer messageConsumer = this.kafkaConsumerFactory.messageConsumer(leader);
+
+        // It doesn't really need to be atomic, as its only accessed in this thread
+        final AtomicLong offset = new AtomicLong(getOffsetIfNull(partition, offsetLong));
+
+        return () -> getFiniteStreamForPartitionAndOffset(messageConsumer, partition, offset);
+    }
+
+    /**
+     * Finite stream of messages
+     * @param messageConsumer Consumer instance
+     * @param partition Partition
+     * @param offset Offset
+     * @return Finite Stream of messages
+     */
+    public Stream<Message> getFiniteStreamForPartitionAndOffset(MessageConsumer messageConsumer, int partition, AtomicLong offset) {
+        Iterable<MessageAndOffset> messageSet = messageConsumer.fetch(topic, partition, offset.get());
+        // Finite stream
+        return StreamSupport.stream(messageSet.spliterator(), false).map(messageAndOffset -> {
+            offset.getAndSet(messageAndOffset.nextOffset());
+
+            ByteBuffer payload = messageAndOffset.message().payload();
+
+            byte[] bytes = new byte[payload.limit()];
+            payload.get(bytes);
+
+            Message message = new Message();
+            message.body = bytes;
+            // @TODO: Can this be refactored so we don't have a nested map() calls? also partition variable
+            message.partition = partition;
+            message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
+            return message;
+        });
+    }
+
 
     private long getOffsetIfNull(int partition, Long offset) {
         if (null != offset) {
