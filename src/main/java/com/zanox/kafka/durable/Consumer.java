@@ -98,16 +98,6 @@ public class Consumer {
         return offsetMap;
     }
 
-    private Iterable<MessageAndOffset> getBatch(String topic, int partition, Broker leader, Long offset) {
-        MessageConsumer messageConsumer = this.kafkaConsumerFactory.messageConsumer(leader);
-        if (null == offset) {
-            FetchConsumer fetchConsumer = this.kafkaConsumerFactory.fetchConsumer();
-            offset = fetchConsumer.getOffset(topic, leader, partition, FetchConsumer.LATEST);
-        }
-        return messageConsumer.fetch(topic, partition, offset);
-    }
-
-
     /**
      * Return batch of messages for these partitions and offsets
      * Offsets are intrinsically attached to their partitions so they always have to be passed together.
