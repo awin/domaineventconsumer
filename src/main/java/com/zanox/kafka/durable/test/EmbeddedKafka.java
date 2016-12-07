@@ -96,6 +96,7 @@ public class EmbeddedKafka {
         try {
             kafkaServer.shutdown();
         } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -103,6 +104,7 @@ public class EmbeddedKafka {
         try {
             zookeeperServer.close();
         } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -112,7 +114,7 @@ public class EmbeddedKafka {
         }
     }
 
-    private class MockTime implements Time { //NOSONAR
+    private class MockTime implements Time {
 
         private long nanos = 0;
 
