@@ -112,7 +112,7 @@ public class EmbeddedKafka {
         }
     }
 
-    private class MockTime implements Time {
+    private class MockTime implements Time { //NOSONAR
 
         private long nanos = 0;
 
