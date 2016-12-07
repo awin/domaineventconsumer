@@ -169,7 +169,7 @@ public class Consumer {
         }
 
         if (! offsetCache.containsKey(partition)) {
-            offsetCache = getLatestOffsets();
+            offsetCache = getEarliestOffsets();
         }
         return offsetCache.get(partition);
     }
