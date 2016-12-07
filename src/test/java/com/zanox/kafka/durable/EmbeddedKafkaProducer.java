@@ -1,4 +1,4 @@
-package com.zanox.kafka.durable.test;
+package com.zanox.kafka.durable;
 
 import kafka.admin.AdminUtils;
 import kafka.javaapi.producer.Producer;

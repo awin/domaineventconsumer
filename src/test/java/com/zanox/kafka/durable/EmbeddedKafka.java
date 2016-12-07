@@ -1,11 +1,10 @@
-package com.zanox.kafka.durable.test;
+package com.zanox.kafka.durable;
 
 import com.google.common.io.Files;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 import kafka.utils.Time;
 import org.apache.curator.test.TestingServer;
-import org.apache.zookeeper.server.ServerCnxnFactory;
 
 import java.io.File;
 import java.io.IOException;

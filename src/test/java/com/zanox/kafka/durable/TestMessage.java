@@ -1,4 +1,4 @@
-package com.zanox.kafka.durable.test;
+package com.zanox.kafka.durable;
 
 public class TestMessage {
     private Integer partition;

@@ -1,4 +1,4 @@
-package groovy.com.zanox.kafka.durable
+package com.zanox.kafka.durable
 
 import com.zanox.kafka.durable.Consumer
 import com.zanox.kafka.durable.infrastructure.FetchConsumer

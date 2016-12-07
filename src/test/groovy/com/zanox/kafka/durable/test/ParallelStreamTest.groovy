@@ -1,7 +1,7 @@
 package groovy.com.zanox.kafka.durable.test
 
-import com.zanox.kafka.durable.test.ParallelStream
-import com.zanox.kafka.durable.test.TestMessage
+import com.zanox.kafka.durable.ParallelStream
+import com.zanox.kafka.durable.TestMessage
 import spock.lang.Ignore
 import spock.lang.Specification
 

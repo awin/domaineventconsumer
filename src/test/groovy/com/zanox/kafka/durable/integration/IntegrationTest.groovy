@@ -2,12 +2,11 @@ package groovy.com.zanox.kafka.durable.integration
 
 import com.zanox.kafka.durable.Consumer
 import com.zanox.kafka.durable.Message
-import com.zanox.kafka.durable.test.EmbeddedKafka
-import com.zanox.kafka.durable.test.EmbeddedKafkaProducer
+import com.zanox.kafka.durable.EmbeddedKafka
+import com.zanox.kafka.durable.EmbeddedKafkaProducer
 import spock.lang.Ignore
 import spock.lang.Specification
 
-import java.util.stream.Collectors
 import java.util.stream.IntStream
 
 class IntegrationTest extends Specification {

@@ -1,4 +1,4 @@
-package com.zanox.kafka.durable.test;
+package com.zanox.kafka.durable;
 
 import java.util.List;
 import java.util.Map;
