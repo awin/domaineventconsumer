@@ -1,10 +1,9 @@
-package groovy.com.zanox.kafka.durable.infrastructure
+package com.zanox.kafka.durable.infrastructure
 
-import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory
-import com.zanox.kafka.durable.infrastructure.MessageConsumer
 import kafka.cluster.Broker
 import kafka.javaapi.FetchResponse
 import kafka.javaapi.consumer.SimpleConsumer
+import kafka.javaapi.message.ByteBufferMessageSet
 import spock.lang.Specification
 
 class MessageConsumerTest extends Specification {
@@ -26,7 +25,11 @@ class MessageConsumerTest extends Specification {
             1 * simpleConsumer.fetch(_) >> { // @TODO: Add request?
                 def fetchResponse = Mock(FetchResponse)
                 1 * fetchResponse.hasError() >> false
-                1 * fetchResponse.messageSet("topic", 1)
+                1 * fetchResponse.messageSet("topic", 1) >> {
+                    def messageSet = Mock(ByteBufferMessageSet)
+                    1 * messageSet.sizeInBytes() >> 1
+                    return messageSet
+                }
                 return fetchResponse
             }
             return simpleConsumer

@@ -1,14 +1,12 @@
 package com.zanox.generic;
 
 import com.zanox.kafka.durable.Consumer;
-import com.zanox.kafka.durable.Message;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 public class PoCDurableConsumer {
     public static void main(String args[]) {
@@ -32,14 +30,13 @@ public class PoCDurableConsumer {
             countMap.put(key, new AtomicInteger(0))
         );
 
-        /**
-         * This may be a little tough to understand: Consumer gives us a List of Partitions
-         * We turn that into a parallel stream, so we can consume a partition in a thread
-         * Inside each partition is a message stream which represents one batch of messages
-         * Inside each batch is a message
+        /*
+         * Consumer gives us a List of Partitions we turn that into a parallel stream,
+         * so we can consume a partition in a thread. Inside each partition is a message
+         * stream which represents one batch of messages. Inside each batch is a message
          *
-         * This is setup like that so users of the consumer can easily switch between
-         * parallel and serial consumption, alternating between batches per partition
+         * Users of the consumer can easily switch between parallel and serial
+         * consumption.
          */
         consumer.streamPartitions(offsetMap).parallelStream().forEach(partition -> {
             partition.forEach(messageBatch -> {

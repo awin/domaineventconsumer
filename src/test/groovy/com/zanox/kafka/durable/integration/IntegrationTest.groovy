@@ -1,4 +1,4 @@
-package groovy.com.zanox.kafka.durable.integration
+package com.zanox.kafka.durable.integration
 
 import com.zanox.kafka.durable.Consumer
 import com.zanox.kafka.durable.Message
