@@ -3,7 +3,6 @@ package com.zanox.kafka.durable;
 import com.zanox.kafka.durable.infrastructure.FetchConsumer;
 import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory;
 import com.zanox.kafka.durable.infrastructure.MessageConsumer;
-import com.zanox.kafka.durable.infrastructure.PartitionException;
 import com.zanox.kafka.durable.infrastructure.TopicConsumer;
 import com.zanox.kafka.durable.infrastructure.PartitionLeader;
 import kafka.cluster.Broker;

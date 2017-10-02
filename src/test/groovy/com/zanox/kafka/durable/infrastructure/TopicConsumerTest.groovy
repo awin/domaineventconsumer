@@ -1,7 +1,7 @@
 package groovy.com.zanox.kafka.durable.infrastructure
 
 import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory
-import com.zanox.kafka.durable.infrastructure.PartitionException
+import com.zanox.kafka.durable.PartitionException
 import com.zanox.kafka.durable.infrastructure.TopicConsumer
 import kafka.javaapi.TopicMetadata
 import kafka.javaapi.TopicMetadataResponse

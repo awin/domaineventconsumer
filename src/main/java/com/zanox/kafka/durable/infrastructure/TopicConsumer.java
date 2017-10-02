@@ -1,6 +1,7 @@
 package com.zanox.kafka.durable.infrastructure;
 
 import com.google.common.net.HostAndPort;
+import com.zanox.kafka.durable.PartitionException;
 import kafka.javaapi.PartitionMetadata;
 import kafka.javaapi.TopicMetadata;
 import kafka.javaapi.TopicMetadataRequest;
