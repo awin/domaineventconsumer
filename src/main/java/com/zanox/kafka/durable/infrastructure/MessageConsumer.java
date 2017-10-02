@@ -7,15 +7,13 @@ import kafka.cluster.Broker;
 import kafka.common.ErrorMapping;
 import kafka.javaapi.FetchResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
+import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.MessageAndOffset;
-
-import java.nio.channels.ClosedChannelException;
-import java.util.ArrayList;
-import java.util.Iterator;
 
 public class MessageConsumer {
     private KafkaConsumerFactory kafkaConsumerFactory;
     private Broker leader;
+    private int SO_TIMEOUT = 100000;
 
     public MessageConsumer(KafkaConsumerFactory kafkaConsumerFactory, Broker leader) {
         this.kafkaConsumerFactory = kafkaConsumerFactory;
@@ -25,7 +23,7 @@ public class MessageConsumer {
     public Iterable<MessageAndOffset> fetch(String topic, int partition, Long offset) {
         String clientName = "Client_" + topic + "_" + partition;
         SimpleConsumer consumer = this.kafkaConsumerFactory.simpleConsumer(
-                this.leader.host(), this.leader.port(), 100000, 64 * 1024, clientName
+                this.leader.host(), this.leader.port(), SO_TIMEOUT, 64 * 1024, clientName
         );
 
         FetchRequest req = new FetchRequestBuilder()
@@ -51,6 +49,21 @@ public class MessageConsumer {
             consumer.close();
             throw new RuntimeException("Fatal error");
         }
-        return fetchResponse.messageSet(topic, partition);
+        ByteBufferMessageSet a = fetchResponse.messageSet(topic, partition);
+        /*
+        Wait a bit
+
+        This seems to be required to not overwhelm the message consumer
+        which ends up throwing uncatchable Scala ClosedChannelException
+        if queried without a delay.
+         */
+        if (a.sizeInBytes() < 1) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return a;
     }
 }

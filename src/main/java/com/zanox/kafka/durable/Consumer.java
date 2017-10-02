@@ -145,11 +145,7 @@ public class Consumer {
     }
 
     private Stream<Message> getFiniteStreamForPartitionAndOffset(MessageConsumer messageConsumer, int partition, AtomicLong offset) {
-
-        Iterable<MessageAndOffset> messageSet;
-        do {
-            messageSet = messageConsumer.fetch(topic, partition, offset.get());
-        } while(StreamSupport.stream(messageSet.spliterator(), false).collect(Collectors.toList()).isEmpty());
+        Iterable<MessageAndOffset> messageSet = messageConsumer.fetch(topic, partition, offset.get());
         // Finite stream
         return StreamSupport.stream(messageSet.spliterator(), false).map(messageAndOffset -> {
             offset.getAndSet(messageAndOffset.nextOffset());

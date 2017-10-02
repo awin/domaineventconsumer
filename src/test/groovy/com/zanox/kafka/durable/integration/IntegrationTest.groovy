@@ -83,33 +83,33 @@ class IntegrationTest extends Specification {
         0 * _
     }
 
+    @Ignore
     def "Try new streaming method"() {
         setup:
         producer.createTopic("benchmark", 4)
         def consumer = new Consumer("benchmark", [embeddedKafka.getKafkaConnectString()])
         def c = Mock(java.util.function.Consumer)
         def map = [0:0L, 1:0L, 2:0L, 3:0L]
-        IntStream.range(0, 100).parallel().forEach({
-            producer.sendMessage("benchmark", "foo1", "bar")
+        IntStream.range(0, 100).parallel().forEach({ key ->
+            producer.sendMessage("benchmark", key.toString(), "bar")
         })
         def offsets = consumer.getLatestOffsets()
+        println(offsets)
+        println(consumer.getEarliestOffsets())
 
         when:
         consumer.streamPartitions(consumer.getEarliestOffsets())
                 .parallelStream()
                 .forEach({ partition ->
             partition.forEach({ messageStream ->
-                List<Message> list = messageStream.collect(Collectors.toList())
-                list.forEach(c)
-                System.out.println("Batch Size is "+list.size())
-                if (list.size() < 1) {
-                    Thread.sleep(1000)
-                }
+                messageStream.forEach({ message ->
+                    System.out.println(new String(message.body))
+                    c.accept(message)
+                })
             })
         })
 
         then:
-        println(offsets)
         100 * c.accept({ Message message ->
             println(new String(message.body))
             assert new String(message.body) == "bar"
