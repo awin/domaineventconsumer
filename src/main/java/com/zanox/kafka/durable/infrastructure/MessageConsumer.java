@@ -9,6 +9,10 @@ import kafka.javaapi.FetchResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.message.MessageAndOffset;
 
+import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
+import java.util.Iterator;
+
 public class MessageConsumer {
     private KafkaConsumerFactory kafkaConsumerFactory;
     private Broker leader;
@@ -29,6 +33,7 @@ public class MessageConsumer {
                 // Note: this fetchSize of 100000 might need to be increased if large batches are written to Kafka
                 .addFetch(topic, partition, offset, 100000)
                 .build();
+
         FetchResponse fetchResponse = consumer.fetch(req);
         // @TODO: Don't close the consumer if we are reusing it
         consumer.close();

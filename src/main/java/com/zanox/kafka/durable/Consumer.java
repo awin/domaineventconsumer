@@ -120,6 +120,7 @@ public class Consumer {
      * @param partitionOffsetMap Partitions and their offsets
      * @return Stream of Streams (of messages)
      */
+    @Deprecated
     public Stream<Message> getStreamFromPartitionOffset(Map<Integer, Long> partitionOffsetMap) {
         Stream<Map.Entry<Integer, Long>> stream = partitionOffsetMap.entrySet().stream();
         return stream.flatMap(entry ->
@@ -144,7 +145,11 @@ public class Consumer {
     }
 
     private Stream<Message> getFiniteStreamForPartitionAndOffset(MessageConsumer messageConsumer, int partition, AtomicLong offset) {
-        Iterable<MessageAndOffset> messageSet = messageConsumer.fetch(topic, partition, offset.get());
+
+        Iterable<MessageAndOffset> messageSet;
+        do {
+            messageSet = messageConsumer.fetch(topic, partition, offset.get());
+        } while(StreamSupport.stream(messageSet.spliterator(), false).collect(Collectors.toList()).isEmpty());
         // Finite stream
         return StreamSupport.stream(messageSet.spliterator(), false).map(messageAndOffset -> {
             offset.getAndSet(messageAndOffset.nextOffset());
@@ -196,5 +201,11 @@ public class Consumer {
         }
         Broker leader = partitionCache.get(partition);
         return leader;
+    }
+
+    public List<Stream<Stream<Message>>> streamPartitions(Map<Integer, Long> offsetMap) {
+        return offsetMap.entrySet().stream().map(entry ->
+            this.getBatchSupplierForPartitionAndOffset(entry.getKey(), entry.getValue())
+        ).map(Stream::generate).collect(Collectors.toList());
     }
 }

@@ -8,8 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class PoCDurableConsumer {
@@ -34,17 +32,18 @@ public class PoCDurableConsumer {
             countMap.put(key, new AtomicInteger(0))
         );
 
-        // Build up a list of batch suppliers per partition
-        List<Supplier<Stream<Message>>> supplierList = offsetMap.entrySet().stream().map(entry ->
-            consumer.getBatchSupplierForPartitionAndOffset(entry.getKey(), entry.getValue())
-        ).collect(Collectors.toList());
-
-        // Create a parallel stream from suppliers: ensures we process all partitions equally
-        supplierList.parallelStream().forEach(batchSupplier -> {
-            // Create an infinite stream from each supplier
-            Stream.generate(batchSupplier).forEach(batchStream -> {
-                // Process each batch separately
-                batchStream.forEach(message -> {
+        /**
+         * This may be a little tough to understand: Consumer gives us a List of Partitions
+         * We turn that into a parallel stream, so we can consume a partition in a thread
+         * Inside each partition is a message stream which represents one batch of messages
+         * Inside each batch is a message
+         *
+         * This is setup like that so users of the consumer can easily switch between
+         * parallel and serial consumption, alternating between batches per partition
+         */
+        consumer.streamPartitions(offsetMap).parallelStream().forEach(partition -> {
+            partition.forEach(messageBatch -> {
+                messageBatch.forEach(message -> {
                     countMap.get(message.partition).incrementAndGet();
                     System.out.format(
                             "Partition: %s Offset: %s Thread: %s %s %n",
