@@ -7,9 +7,7 @@ import com.zanox.kafka.durable.EmbeddedKafkaProducer
 import spock.lang.Ignore
 import spock.lang.Specification
 
-import java.util.stream.Collectors
 import java.util.stream.IntStream
-import java.util.stream.Stream
 
 class IntegrationTest extends Specification {
 
@@ -25,32 +23,6 @@ class IntegrationTest extends Specification {
 
     def cleanup() {
         embeddedKafka.stop()
-    }
-
-    def "try running normal Kafka"() {
-        setup:
-        producer.createTopic("benchmark", 4)
-        def consumer = new Consumer("benchmark", [embeddedKafka.getKafkaConnectString()])
-        def c = Mock(java.util.function.Consumer)
-        def map = [0:0L, 1:0L, 2:0L, 3:0L]
-
-        when:
-        IntStream.range(0, 100).parallel().forEach({
-            producer.sendMessage("benchmark", "foo1", "bar")
-        })
-        def offsets = consumer.getLatestOffsets()
-
-        consumer.getBatchFromPartitionOffset(consumer.getEarliestOffsets()).forEach(c)
-
-        then:
-        println(offsets)
-        100 * c.accept({ Message message ->
-            assert new String(message.body) == "bar"
-            assert message.offset == map[message.partition] + 1
-            map[message.partition] = message.offset;
-            return true;
-        })
-        0 * _
     }
 
     @Ignore

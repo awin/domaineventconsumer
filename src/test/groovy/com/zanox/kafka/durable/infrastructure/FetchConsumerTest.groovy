@@ -1,7 +1,5 @@
-package groovy.com.zanox.kafka.durable.infrastructure
+package com.zanox.kafka.durable.infrastructure
 
-import com.zanox.kafka.durable.infrastructure.FetchConsumer
-import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory
 import kafka.cluster.Broker
 import kafka.javaapi.OffsetRequest
 import kafka.javaapi.OffsetResponse

@@ -1,4 +1,4 @@
-package groovy.com.zanox.kafka.durable.test
+package com.zanox.kafka.durable.test
 
 import com.zanox.kafka.durable.ParallelStream
 import com.zanox.kafka.durable.TestMessage
