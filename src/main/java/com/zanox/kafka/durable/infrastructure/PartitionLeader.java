@@ -1,6 +1,6 @@
 package com.zanox.kafka.durable.infrastructure;
 
-import kafka.cluster.Broker;
+import kafka.cluster.BrokerEndPoint;
 
 /**
  * This encapsulates a Leader for a Partition
@@ -8,9 +8,9 @@ import kafka.cluster.Broker;
  */
 public class PartitionLeader {
     private Integer partitionId;
-    private Broker leader;
+    private BrokerEndPoint leader;
 
-    public PartitionLeader(Integer partitionId, Broker leader) {
+    public PartitionLeader(Integer partitionId, BrokerEndPoint leader) {
         this.partitionId = partitionId;
         this.leader = leader;
     }
@@ -19,7 +19,7 @@ public class PartitionLeader {
         return partitionId;
     }
 
-    public Broker getLeader() {
+    public BrokerEndPoint getLeader() {
         return leader;
     }
 }

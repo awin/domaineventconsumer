@@ -1,11 +1,11 @@
 # Domain Event Consumer Library
-This is a library to help build Consumers that connect to Kafka
+A library to help build exactly-once semantics Kafka Consumers
 
 While there are plenty of consumer libraries that are of the automatic nature
 this library is designed for building applications that exhibit no message loss
 during failures. This is achieved by letting the Application track offsets itself
 instead of relying on Kafka Commit API or Zookeeper. The reasoning is that in a
-distributed system its near impossible to achieve concensus between two systems.
+distributed system its near impossible to achieve consensus between two systems.
 
 By allowing you to save message offset in the same transaction as processing of the
 message ensures that if anything fails, the consumer will be able to restart from

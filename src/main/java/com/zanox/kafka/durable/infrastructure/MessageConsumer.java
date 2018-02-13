@@ -4,6 +4,7 @@ import com.zanox.kafka.durable.OffsetException;
 import kafka.api.FetchRequest;
 import kafka.api.FetchRequestBuilder;
 import kafka.cluster.Broker;
+import kafka.cluster.BrokerEndPoint;
 import kafka.common.ErrorMapping;
 import kafka.javaapi.FetchResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
@@ -12,10 +13,10 @@ import kafka.message.MessageAndOffset;
 
 public class MessageConsumer {
     private KafkaConsumerFactory kafkaConsumerFactory;
-    private Broker leader;
+    private BrokerEndPoint leader;
     private int SO_TIMEOUT = 100000;
 
-    public MessageConsumer(KafkaConsumerFactory kafkaConsumerFactory, Broker leader) {
+    public MessageConsumer(KafkaConsumerFactory kafkaConsumerFactory, BrokerEndPoint leader) {
         this.kafkaConsumerFactory = kafkaConsumerFactory;
         this.leader = leader;
     }

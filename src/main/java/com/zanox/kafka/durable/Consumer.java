@@ -5,7 +5,7 @@ import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory;
 import com.zanox.kafka.durable.infrastructure.MessageConsumer;
 import com.zanox.kafka.durable.infrastructure.TopicConsumer;
 import com.zanox.kafka.durable.infrastructure.PartitionLeader;
-import kafka.cluster.Broker;
+import kafka.cluster.BrokerEndPoint;
 import kafka.message.MessageAndOffset;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class Consumer {
-    private final Map<Integer, Broker> partitionCache;
+    private final Map<Integer, BrokerEndPoint> partitionCache;
     private final List<String> seedBrokers;
     private final KafkaConsumerFactory kafkaConsumerFactory;
     private String topic;
@@ -104,7 +104,7 @@ public class Consumer {
      * @return Infinite Stream of messages
      */
     private Supplier<Stream<Message>> getBatchSupplierForPartitionAndOffset(int partition, Long offsetLong) {
-        Broker leader = getLeaderForPartition(partition);
+        BrokerEndPoint leader = getLeaderForPartition(partition);
         MessageConsumer messageConsumer = this.kafkaConsumerFactory.messageConsumer(leader);
 
         // It doesn't really need to be atomic, as its only accessed in this thread
@@ -144,7 +144,7 @@ public class Consumer {
         return offsetCache.get(partition);
     }
 
-    private Broker getLeaderForPartition(Integer partition) {
+    private BrokerEndPoint getLeaderForPartition(Integer partition) {
         // If Partition is not in the cache,
         if (!partitionCache.containsKey(partition)) {
             TopicConsumer topicConsumer = this.kafkaConsumerFactory.topicConsumer(this.topic, this.seedBrokers);
@@ -164,7 +164,7 @@ public class Consumer {
                 throw new PartitionException("Specified partition doesn't exist");
             }
         }
-        Broker leader = partitionCache.get(partition);
+        BrokerEndPoint leader = partitionCache.get(partition);
         return leader;
     }
 

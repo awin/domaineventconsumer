@@ -1,6 +1,6 @@
 package com.zanox.kafka.durable.infrastructure
 
-import kafka.cluster.Broker
+import kafka.cluster.BrokerEndPoint
 import kafka.javaapi.FetchResponse
 import kafka.javaapi.consumer.SimpleConsumer
 import kafka.javaapi.message.ByteBufferMessageSet
@@ -10,7 +10,7 @@ class MessageConsumerTest extends Specification {
     def "It can fetch a message list"() {
         setup:
         def consumerFactory = Mock(KafkaConsumerFactory)
-        def leader = Mock(Broker)
+        def leader = Mock(BrokerEndPoint)
         def consumer = new MessageConsumer(consumerFactory, leader)
 
         when:

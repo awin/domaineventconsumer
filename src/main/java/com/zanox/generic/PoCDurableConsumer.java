@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class PoCDurableConsumer {
@@ -25,7 +26,7 @@ public class PoCDurableConsumer {
         System.err.println("This are the latest offsets: " + consumer.getLatestOffsets());
 
         // Build a statistics map
-        Map<Integer, AtomicInteger> countMap = new HashMap<>();
+        Map<Integer, AtomicInteger> countMap = new ConcurrentHashMap<>();
         offsetMap.forEach((key, value) ->
             countMap.put(key, new AtomicInteger(0))
         );

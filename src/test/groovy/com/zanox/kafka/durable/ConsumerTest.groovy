@@ -4,7 +4,7 @@ import com.zanox.kafka.durable.infrastructure.FetchConsumer
 import com.zanox.kafka.durable.infrastructure.KafkaConsumerFactory
 import com.zanox.kafka.durable.infrastructure.TopicConsumer
 import com.zanox.kafka.durable.infrastructure.PartitionLeader
-import kafka.cluster.Broker
+import kafka.cluster.BrokerEndPoint
 import spock.lang.Specification
 
 class ConsumerTest extends Specification {
@@ -32,9 +32,9 @@ class ConsumerTest extends Specification {
             def topicConsumer = Mock(TopicConsumer)
             1 * topicConsumer.getPartitions() >> {
                 List<PartitionLeader> partitionList = new ArrayList<>()
-                partitionList.add(new PartitionLeader(0, Mock(Broker)))
-                partitionList.add(new PartitionLeader(1, Mock(Broker)))
-                return partitionList;
+                partitionList.add(new PartitionLeader(0, Mock(BrokerEndPoint)))
+                partitionList.add(new PartitionLeader(1, Mock(BrokerEndPoint)))
+                return partitionList
             }
             return topicConsumer
         }
@@ -46,7 +46,7 @@ class ConsumerTest extends Specification {
         List<String> list = Collections.singletonList("BrokerSeedURL");
         def consumerFactory = Mock(KafkaConsumerFactory)
         def consumer = new Consumer(consumerFactory, "topic", list)
-        def leader = Mock(Broker)
+        def leader = Mock(BrokerEndPoint)
 
         def pl1 = Mock(PartitionLeader)
         def pl2 = Mock(PartitionLeader)

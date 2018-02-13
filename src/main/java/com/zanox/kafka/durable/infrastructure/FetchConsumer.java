@@ -2,7 +2,7 @@ package com.zanox.kafka.durable.infrastructure;
 
 import com.zanox.kafka.durable.OffsetException;
 import kafka.api.PartitionOffsetRequestInfo;
-import kafka.cluster.Broker;
+import kafka.cluster.BrokerEndPoint;
 import kafka.common.TopicAndPartition;
 import kafka.javaapi.OffsetResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
@@ -30,8 +30,9 @@ public class FetchConsumer {
         this.kafkaConsumerFactory = kafkaConsumerFactory;
     }
 
-    public long getOffset(String topic, Broker leader, int partition, long time) {
+    public long getOffset(String topic, BrokerEndPoint leader, int partition, long time) {
         SimpleConsumer consumer = this.kafkaConsumerFactory.simpleConsumer(
+
             leader.host(), leader.port(), 100000, 64 * 1024, "offsetLookup"
         );
         long offset = getOffset(consumer, topic, partition, time, "offsetLookup");

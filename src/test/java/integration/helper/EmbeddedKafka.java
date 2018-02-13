@@ -1,4 +1,4 @@
-package com.zanox.kafka.durable;
+package integration.helper;
 
 import com.google.common.io.Files;
 import kafka.server.KafkaConfig;
@@ -87,7 +87,7 @@ public class EmbeddedKafka {
 
         KafkaConfig kafkaConfig = new KafkaConfig(properties);
 
-        kafkaServer = new KafkaServer(kafkaConfig, new MockTime());
+        kafkaServer = new KafkaServer(kafkaConfig, new MockTime(), scala.Option.empty());
         kafkaServer.startup();
     }
 
@@ -95,7 +95,6 @@ public class EmbeddedKafka {
         try {
             kafkaServer.shutdown();
         } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -103,7 +102,6 @@ public class EmbeddedKafka {
         try {
             zookeeperServer.close();
         } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 

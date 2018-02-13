@@ -2,8 +2,8 @@ package com.zanox.kafka.durable.integration
 
 import com.zanox.kafka.durable.Consumer
 import com.zanox.kafka.durable.Message
-import com.zanox.kafka.durable.EmbeddedKafka
-import com.zanox.kafka.durable.EmbeddedKafkaProducer
+import integration.helper.EmbeddedKafka
+import integration.helper.EmbeddedKafkaProducer
 import spock.lang.Ignore
 import spock.lang.Specification
 
@@ -25,6 +25,7 @@ class IntegrationTest extends Specification {
         embeddedKafka.stop()
     }
 
+    /*
     @Ignore
     def "Try streaming producer"() {
         setup:
@@ -53,7 +54,7 @@ class IntegrationTest extends Specification {
             return true;
         })
         0 * _
-    }
+    }*/
 
     @Ignore
     def "Try new streaming method"() {

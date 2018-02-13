@@ -1,11 +1,13 @@
-package com.zanox.kafka.durable;
+package integration.helper;
 
 import kafka.admin.AdminUtils;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 import kafka.utils.ZKStringSerializer$;
+import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
+import org.I0Itec.zkclient.ZkConnection;
 import org.I0Itec.zkclient.exception.ZkTimeoutException;
 
 import java.util.Properties;
@@ -18,6 +20,7 @@ public class EmbeddedKafkaProducer {
 
     private Producer<String, String> producer;
     private ZkClient zkClient;
+    private ZkUtils zkUtils;
 
     public EmbeddedKafkaProducer(
         EmbeddedKafka embeddedKafka
@@ -31,7 +34,7 @@ public class EmbeddedKafkaProducer {
         initialize();
 
         AdminUtils.createTopic(
-            zkClient,
+            zkUtils,
             topic,
             2,
             1,
@@ -46,7 +49,7 @@ public class EmbeddedKafkaProducer {
         initialize();
 
         AdminUtils.createTopic(
-            zkClient,
+            zkUtils,
             topic,
             numOfPartitions,
             1,
@@ -94,14 +97,24 @@ public class EmbeddedKafkaProducer {
         producer = new Producer<>(new ProducerConfig(properties));
 
         int retries = 5;
+
         do {
+
             try {
+
+                ZkConnection connection =
+                    new ZkConnection(
+                        embeddedKafka.getZookeeperConnectString()
+                    );
+
                 zkClient = new ZkClient(
-                    embeddedKafka.getZookeeperConnectString(),
-                    500,
+                    connection,
                     500,
                     ZKStringSerializer$.MODULE$
                 );
+
+                zkUtils = new kafka.utils.ZkUtils(zkClient, connection, false);
+
                 break;
 
             } catch (ZkTimeoutException e) {
@@ -112,8 +125,7 @@ public class EmbeddedKafkaProducer {
 
                 System.err.println("Failed to connect to Zookeeper, retrying..., " + retries + " left");
             }
-        }
-        while (retries-- > 0);
 
+        } while (retries-- > 0);
     }
 }
