@@ -22,7 +22,6 @@ public class Consumer {
     private final List<String> seedBrokers;
     private final KafkaConsumerFactory kafkaConsumerFactory;
     private String topic;
-    private Map<Integer, Long> offsetCache = new HashMap<>();
 
     /**
      * Constructor with Injectable ConsumerFactory
@@ -69,23 +68,23 @@ public class Consumer {
      *
      * @return Map of latest offsets
      */
-    public Map<Integer, Long> getLatestOffsets() {
-        return getOffsets(FetchConsumer.LATEST);
+    public Map<Integer, Offset> getLatestOffsets() {
+        return getOffsets(Offset.LATEST);
     }
 
     /**
      * Return earliest offsets
      * @return Map of earliest offsets
      */
-    public Map<Integer, Long> getEarliestOffsets() {
-        return getOffsets(FetchConsumer.EARLIEST);
+    public Map<Integer, Offset> getEarliestOffsets() {
+        return getOffsets(Offset.EARLIEST);
     }
 
-    private Map<Integer, Long> getOffsets(long whichTime) {
+    private Map<Integer, Offset> getOffsets(Offset whichTime) {
         TopicConsumer topicConsumer = this.kafkaConsumerFactory.topicConsumer(this.topic, this.seedBrokers);
         FetchConsumer fetchConsumer = this.kafkaConsumerFactory.fetchConsumer();
 
-        Map<Integer, Long> offsetMap = new HashMap<>();
+        Map<Integer, Offset> offsetMap = new HashMap<>();
         topicConsumer.getPartitions().forEach(partitionLeader -> {
             offsetMap.put(
                     partitionLeader.getPartitionId(),
@@ -103,12 +102,12 @@ public class Consumer {
      * @param offsetLong Offset to start from
      * @return Infinite Stream of messages
      */
-    private Supplier<Stream<Message>> getBatchSupplierForPartitionAndOffset(int partition, Long offsetLong) {
+    private Supplier<Stream<Message>> getBatchSupplierForPartitionAndOffset(int partition, Offset offsetLong) {
         BrokerEndPoint leader = getLeaderForPartition(partition);
         MessageConsumer messageConsumer = this.kafkaConsumerFactory.messageConsumer(leader);
 
         // It doesn't really need to be atomic, as its only accessed in this thread
-        final AtomicLong offset = new AtomicLong(getOffsetIfNull(partition, offsetLong));
+        final AtomicLong offset = new AtomicLong(offsetLong.value);
 
         return () -> getFiniteStreamForPartitionAndOffset(messageConsumer, partition, offset);
     }
@@ -130,18 +129,6 @@ public class Consumer {
             message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
             return message;
         });
-    }
-
-
-    private long getOffsetIfNull(int partition, Long offset) {
-        if (null != offset) {
-            return offset;
-        }
-
-        if (! offsetCache.containsKey(partition)) {
-            offsetCache = getEarliestOffsets();
-        }
-        return offsetCache.get(partition);
     }
 
     private BrokerEndPoint getLeaderForPartition(Integer partition) {
@@ -168,7 +155,7 @@ public class Consumer {
         return leader;
     }
 
-    public List<Stream<Stream<Message>>> streamPartitions(Map<Integer, Long> offsetMap) {
+    public List<Stream<Stream<Message>>> streamPartitions(Map<Integer, Offset> offsetMap) {
         return offsetMap.entrySet().stream().map(entry ->
             this.getBatchSupplierForPartitionAndOffset(entry.getKey(), entry.getValue())
         ).map(Stream::generate).collect(Collectors.toList());

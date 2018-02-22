@@ -55,7 +55,8 @@ class ConsumerTest extends Specification {
         def offsets = consumer.getLatestOffsets()
 
         then:
-        assert offsets == [0: 2L, 1: 42L]
+        assert offsets[0].value == 2L
+        assert offsets[1].value == 42L
         2 * pl1.getPartitionId() >> 0
         1 * pl1.getLeader() >> leader
         2 * pl2.getPartitionId() >> 1
@@ -64,7 +65,7 @@ class ConsumerTest extends Specification {
         1 * consumerFactory.topicConsumer("topic", list) >> {
             def topicConsumer = Mock(TopicConsumer)
             1 * topicConsumer.getPartitions() >> {
-                List<PartitionLeader> partitions = new ArrayList<>();
+                List<PartitionLeader> partitions = new ArrayList<>()
                 partitions.add(pl1)
                 partitions.add(pl2)
                 return partitions
@@ -73,8 +74,8 @@ class ConsumerTest extends Specification {
         }
         1 * consumerFactory.fetchConsumer() >> {
             def fetchConsumer = Mock(FetchConsumer)
-            1 * fetchConsumer.getOffset("topic", leader, 0, fetchConsumer.LATEST) >> 2L
-            1 * fetchConsumer.getOffset("topic", leader, 1, fetchConsumer.LATEST) >> 42L
+            1 * fetchConsumer.getOffset("topic", leader, 0, Offset.LATEST) >> new Offset(2L)
+            1 * fetchConsumer.getOffset("topic", leader, 1, Offset.LATEST) >> new Offset(42L)
             return fetchConsumer
         }
         0 * _

@@ -1,6 +1,7 @@
 package com.zanox.generic;
 
 import com.zanox.kafka.durable.Consumer;
+import com.zanox.kafka.durable.Offset;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,15 +20,15 @@ public class PoCDurableConsumer {
         Consumer consumer = new Consumer(topic, seeds);
 
         // List all available partitions with earliest offsets
-        Map<Integer, Long> offsetMap = consumer.getEarliestOffsets();
-        System.err.println("We start with this offset map: " + offsetMap);
+        ConcurrentHashMap<Integer, Offset> initialOffsets = new ConcurrentHashMap<>(consumer.getEarliestOffsets());
+        System.err.println("We start with this offset map: " + initialOffsets);
 
         // If you want to start from latest offsets do:
         System.err.println("This are the latest offsets: " + consumer.getLatestOffsets());
 
         // Build a statistics map
         Map<Integer, AtomicInteger> countMap = new ConcurrentHashMap<>();
-        offsetMap.forEach((key, value) ->
+        initialOffsets.forEach((key, value) ->
             countMap.put(key, new AtomicInteger(0))
         );
 
@@ -39,7 +40,7 @@ public class PoCDurableConsumer {
          * Users of the consumer can easily switch between parallel and serial
          * consumption.
          */
-        consumer.streamPartitions(offsetMap).parallelStream().forEach(partition -> {
+        consumer.streamPartitions(initialOffsets).parallelStream().forEach(partition -> {
             partition.forEach(messageBatch -> {
                 messageBatch.forEach(message -> {
                     countMap.get(message.partition).incrementAndGet();
