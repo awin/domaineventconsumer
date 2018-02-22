@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -18,11 +19,10 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class Consumer {
-    private final Map<Integer, BrokerEndPoint> partitionCache;
+    private final ConcurrentHashMap<Integer, BrokerEndPoint> partitionCache;
     private final List<String> seedBrokers;
     private final KafkaConsumerFactory kafkaConsumerFactory;
     private String topic;
-    private Map<Integer, Long> offsetCache = new HashMap<>();
 
     /**
      * Constructor with Injectable ConsumerFactory
@@ -35,7 +35,7 @@ public class Consumer {
         this.kafkaConsumerFactory = kafkaConsumerFactory;
         this.topic = topic;
         this.seedBrokers = seedBrokers;
-        partitionCache = new HashMap<>();
+        partitionCache = new ConcurrentHashMap<>();
     }
 
     /**
@@ -104,11 +104,14 @@ public class Consumer {
      * @return Infinite Stream of messages
      */
     private Supplier<Stream<Message>> getBatchSupplierForPartitionAndOffset(int partition, Long offsetLong) {
+        if (null == offsetLong) {
+            throw new IllegalArgumentException("Offset cannot be null");
+        }
         BrokerEndPoint leader = getLeaderForPartition(partition);
         MessageConsumer messageConsumer = this.kafkaConsumerFactory.messageConsumer(leader);
 
         // It doesn't really need to be atomic, as its only accessed in this thread
-        final AtomicLong offset = new AtomicLong(getOffsetIfNull(partition, offsetLong));
+        final AtomicLong offset = new AtomicLong(offsetLong);
 
         return () -> getFiniteStreamForPartitionAndOffset(messageConsumer, partition, offset);
     }
@@ -130,18 +133,6 @@ public class Consumer {
             message.offset = messageAndOffset.nextOffset(); // This is just `offset + 1L`
             return message;
         });
-    }
-
-
-    private long getOffsetIfNull(int partition, Long offset) {
-        if (null != offset) {
-            return offset;
-        }
-
-        if (! offsetCache.containsKey(partition)) {
-            offsetCache = getEarliestOffsets();
-        }
-        return offsetCache.get(partition);
     }
 
     private BrokerEndPoint getLeaderForPartition(Integer partition) {
