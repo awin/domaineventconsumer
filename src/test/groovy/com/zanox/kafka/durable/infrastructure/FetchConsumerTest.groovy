@@ -1,6 +1,5 @@
 package com.zanox.kafka.durable.infrastructure
 
-import com.zanox.kafka.durable.Offset
 import kafka.cluster.BrokerEndPoint
 import kafka.javaapi.OffsetRequest
 import kafka.javaapi.OffsetResponse
@@ -15,11 +14,11 @@ class FetchConsumerTest extends Specification {
         def broker = Mock(BrokerEndPoint)
 
         when:
-        def offset = fetchConsumer.getOffset("topic", broker, 42, Offset.LATEST)
+        def offset = fetchConsumer.getOffset("topic", broker, 42, fetchConsumer.LATEST)
 
 
         then:
-        assert offset.value == 2L
+        assert offset == 2L
         1 * broker.host() >> "brokerHost"
         1 * broker.port() >> 1337
         1 * factory.simpleConsumer("brokerHost", 1337, _, _, _) >> {
